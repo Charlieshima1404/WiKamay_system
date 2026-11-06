@@ -1,0 +1,4 @@
+<resources>
+    <!-- EDITABLE: The app name shown under the launcher icon. -->
+    <string name="app_name">WiKamay</string>
+</resources>

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- PURPOSE: Base window theme used before Compose draws the first screen.
+         The real colors/typography are in ui/theme/Theme.kt. -->
+    <style name="Theme.WiKamay" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@android:color/white</item>
+    </style>
+</resources>

@@ -1,5 +1,7 @@
+
 package com.wikamay.app.ui.screens
 
+import androidx.camera.core.CameraSelector
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,6 +22,7 @@ import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -32,8 +35,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.wikamay.app.data.SampleData
-import com.wikamay.app.ui.components.CameraPlaceholder
+
+import com.wikamay.app.ui.components.CameraXPreview
 import com.wikamay.app.ui.components.ModeToggle
 import com.wikamay.app.ui.components.PlaceholderDialog
 import com.wikamay.app.ui.components.RoundActionButton
@@ -43,136 +46,206 @@ import com.wikamay.app.ui.components.TranslationMode
 import com.wikamay.app.ui.theme.PanelGray
 import com.wikamay.app.ui.theme.TextDark
 
-// EDITABLE: Texts used on this screen.
-private const val SCAN_HINT = "Place your hands inside the frame"
-private const val EMPTY_RESULT_TEXT = "Tap the camera button to scan. The translation will appear here."
+private const val SCAN_HINT =
+    "Place your hands inside the frame"
 
-/**
- * PURPOSE: REVERSE TRANSLATION screen: Sign to Text/Speech.
- * Shows a fake camera preview with a scanning frame. Tapping the camera button shows a
- * sample translation (taken from SampleData.sampleTranslations).
- *
- * NAVIGATION:
- * - [onSwitchToTextToSign]: tapped on the "Text → Sign" side of the toggle.
- * - [onOpenLearningMenu]: tapped on the Learning Menu button (upper-right corner).
- */
+private const val EMPTY_RESULT_TEXT =
+    "Your sign translation will appear here."
+
 @Composable
 fun SignToTextScreen(
     onSwitchToTextToSign: () -> Unit,
     onOpenLearningMenu: () -> Unit
 ) {
-    // PURPOSE: Which sample translation is displayed. -1 means "no scan yet".
-    var resultIndex by rememberSaveable { mutableStateOf(-1) }
 
-    // PURPOSE: Whether each placeholder pop-up is visible.
-    var showScanDialog by remember { mutableStateOf(false) }
-    var showSpeechDialog by remember { mutableStateOf(false) }
+    // Camera selection
+    var isFrontCamera by rememberSaveable {
+        mutableStateOf(true)
+    }
 
-    // PLACEHOLDER: The whole background is a fake camera preview. Future: CameraX live preview.
-    CameraPlaceholder(modifier = Modifier.fillMaxSize()) {
+    // Dialog visibility
+    var showScanDialog by remember {
+        mutableStateOf(false)
+    }
+
+    var showSpeechDialog by remember {
+        mutableStateOf(false)
+    }
+
+    // CameraX live preview
+    CameraXPreview(
+        modifier = Modifier.fillMaxSize(),
+        shape = RoundedCornerShape(0.dp),
+        lensFacing = if (isFrontCamera) {
+            CameraSelector.LENS_FACING_FRONT
+        } else {
+            CameraSelector.LENS_FACING_BACK
+        }
+    ) {
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .systemBarsPadding()
-                .padding(horizontal = 20.dp, vertical = 12.dp)
+                .padding(
+                    horizontal = 20.dp,
+                    vertical = 12.dp
+                )
         ) {
-            // ---- Top row: Learning Menu button in the upper-right corner ----
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+
+            // TOP ROW
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+
+                TextButton(
+                    onClick = {
+                        isFrontCamera = !isFrontCamera
+                    }
+                ) {
+                    Text(
+                        text = if (isFrontCamera) {
+                            "Switch to Back"
+                        } else {
+                            "Switch to Front"
+                        },
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+
                 SquareIconButton(
                     icon = Icons.Filled.School,
                     contentDescription = "Open Learning Menu",
-                    onClick = onOpenLearningMenu // NAVIGATION: opens the Learning Menu.
+                    onClick = onOpenLearningMenu
                 )
             }
-            Spacer(Modifier.height(4.dp))
 
-            // ---- Translation direction toggle ----
+            Spacer(
+                modifier = Modifier.height(4.dp)
+            )
+
+            // TRANSLATION MODE
             ModeToggle(
                 selected = TranslationMode.SIGN_TO_TEXT,
                 onModeSelected = { mode ->
-                    // NAVIGATION: Only the other side does something (we are already on Sign → Text).
-                    if (mode == TranslationMode.TEXT_TO_SIGN) onSwitchToTextToSign()
+                    if (mode == TranslationMode.TEXT_TO_SIGN) {
+                        onSwitchToTextToSign()
+                    }
                 },
                 modifier = Modifier
                     .align(Alignment.CenterHorizontally)
                     .width(280.dp)
             )
 
-            // ---- Scanning frame (four corner brackets) ----
+            // LIVE CAMERA SCANNING AREA
             Box(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 24.dp)
+                    .padding(
+                        horizontal = 24.dp,
+                        vertical = 24.dp
+                    )
             ) {
-                ScanFrame(modifier = Modifier.fillMaxSize())
+
+                // Scanning brackets
+                ScanFrame(
+                    modifier = Modifier.fillMaxSize()
+                )
+
+                // Camera instruction
                 Text(
                     text = SCAN_HINT,
-                    color = TextDark,
+                    color = androidx.compose.ui.graphics.Color.White,
                     style = MaterialTheme.typography.bodyLarge,
                     textAlign = TextAlign.Center,
-                    modifier = Modifier.align(Alignment.Center)
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .background(
+                            androidx.compose.ui.graphics.Color.Black.copy(
+                                alpha = 0.55f
+                            ),
+                            RoundedCornerShape(8.dp)
+                        )
+                        .padding(10.dp)
                 )
             }
 
-            // ---- Camera / scan button ----
-            // PLACEHOLDER: Future development starts hand tracking + FSL recognition here.
+            // CAMERA SCAN BUTTON
             RoundActionButton(
                 icon = Icons.Filled.CameraAlt,
-                contentDescription = "Scan sign (camera)",
+                contentDescription = "Scan sign using camera",
                 onClick = {
-                    // FUNCTION: Show the next sample translation and explain it is a placeholder.
-                    resultIndex = (resultIndex + 1) % SampleData.sampleTranslations.size
                     showScanDialog = true
                 },
                 size = 64.dp,
-                modifier = Modifier.align(Alignment.CenterHorizontally)
+                modifier = Modifier.align(
+                    Alignment.CenterHorizontally
+                )
             )
-            Spacer(Modifier.height(12.dp))
 
-            // ---- Translated text panel with the text-to-speech button ----
+            Spacer(
+                modifier = Modifier.height(12.dp)
+            )
+
+            // TRANSLATION RESULT PANEL
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(min = 80.dp)
-                    .clip(RoundedCornerShape(16.dp))
+                    .clip(
+                        RoundedCornerShape(16.dp)
+                    )
                     .background(PanelGray)
                     .padding(16.dp),
+
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // PURPOSE: Shows the (sample) translated FSL text.
+
                 Text(
-                    text = if (resultIndex < 0) EMPTY_RESULT_TEXT
-                    else SampleData.sampleTranslations[resultIndex],
+                    text = EMPTY_RESULT_TEXT,
                     color = TextDark,
-                    style = if (resultIndex < 0) MaterialTheme.typography.bodyMedium
-                    else MaterialTheme.typography.titleLarge,
-                    fontWeight = if (resultIndex < 0) FontWeight.Normal else FontWeight.Bold,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Normal,
                     modifier = Modifier.weight(1f)
                 )
-                // PLACEHOLDER: Future development reads the text aloud (Android TextToSpeech).
+
+                // TEXT TO SPEECH
                 RoundActionButton(
                     icon = Icons.Filled.VolumeUp,
                     contentDescription = "Read translation aloud",
-                    onClick = { showSpeechDialog = true },
+                    onClick = {
+                        showSpeechDialog = true
+                    },
                     size = 48.dp
                 )
             }
         }
     }
 
+    // CAMERA SCAN INFORMATION
     if (showScanDialog) {
+
         PlaceholderDialog(
-            title = "Camera scan (placeholder)",
-            message = "Camera-based FSL recognition will be implemented in a later stage of development. The text shown is only a sample translation.",
-            onDismiss = { showScanDialog = false }
+            title = "FSL Recognition",
+            message = "Your live camera preview is available. Automatic Filipino Sign Language recognition still needs to be connected to a hand detection and recognition model.",
+            onDismiss = {
+                showScanDialog = false
+            }
         )
     }
+
+    // TEXT TO SPEECH INFORMATION
     if (showSpeechDialog) {
+
         PlaceholderDialog(
-            title = "Text-to-speech (placeholder)",
-            message = "Reading the translation aloud will be implemented in a later stage of development.",
-            onDismiss = { showSpeechDialog = false }
+            title = "Text-to-speech",
+            message = "Text-to-speech will be connected after the sign recognition system is implemented.",
+            onDismiss = {
+                showSpeechDialog = false
+            }
         )
     }
 }

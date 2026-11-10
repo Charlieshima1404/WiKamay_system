@@ -1,10 +1,10 @@
+
 package com.wikamay.app.ui.components
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -24,44 +24,67 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.wikamay.app.ui.theme.CameraBackground
 import com.wikamay.app.ui.theme.PrimarySlate
 import com.wikamay.app.ui.theme.ScanBracket
 import com.wikamay.app.ui.theme.SoftBlueGray
 import com.wikamay.app.ui.theme.TextMuted
 
-/** FUNCTION: Draws the two diagonal lines (an "X") used for image placeholders in the wireframe. */
+/**
+ * Draws the two diagonal lines (an X) used for image placeholders.
+ */
 private fun DrawScope.drawCross(color: Color) {
-    drawLine(color, Offset.Zero, Offset(size.width, size.height), strokeWidth = 2f)
-    drawLine(color, Offset(size.width, 0f), Offset(0f, size.height), strokeWidth = 2f)
+    drawLine(
+        color = color,
+        start = Offset.Zero,
+        end = Offset(size.width, size.height),
+        strokeWidth = 2f
+    )
+
+    drawLine(
+        color = color,
+        start = Offset(size.width, 0f),
+        end = Offset(0f, size.height),
+        strokeWidth = 2f
+    )
 }
 
 /**
- * PURPOSE: A labeled box that stands in for an image, avatar, or video that does not exist yet.
- * PLACEHOLDER: Replace the usage of this component with a real Image/Video when assets are ready.
- * EDITABLE: [label] is the text shown inside; [icon] is the optional icon; [showCross] toggles the X lines.
+ * A labeled box used as a placeholder for images, avatars, or videos.
  */
 @Composable
 fun PlaceholderBox(
     modifier: Modifier = Modifier,
+    shape: Shape = RoundedCornerShape(16.dp),
     label: String = "",
     icon: ImageVector? = null,
-    showCross: Boolean = true,
-    shape: Shape = RoundedCornerShape(12.dp)
+    showCross: Boolean = true
 ) {
     val crossColor = PrimarySlate.copy(alpha = 0.25f)
+
     Box(
         modifier = modifier
             .clip(shape)
             .background(SoftBlueGray)
             .border(2.dp, PrimarySlate, shape)
-            .drawBehind { if (showCross) drawCross(crossColor) },
+            .drawBehind {
+                if (showCross) {
+                    drawCross(crossColor)
+                }
+            },
         contentAlignment = Alignment.Center
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
             if (icon != null) {
-                Icon(icon, contentDescription = null, tint = PrimarySlate, modifier = Modifier.size(40.dp))
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = PrimarySlate,
+                    modifier = Modifier.size(40.dp)
+                )
             }
+
             if (label.isNotBlank()) {
                 Text(
                     text = label,
@@ -78,57 +101,76 @@ fun PlaceholderBox(
 }
 
 /**
- * PURPOSE: A fake camera preview (light gray area with an X), used instead of a real camera.
- * PLACEHOLDER: Future development replaces this with the CameraX live preview.
- * The [content] slot lets screens draw things on top (scan frame, buttons, ...).
+ * Alias for [PlaceholderBox].
  */
 @Composable
-fun CameraPlaceholder(
+fun Placeholder(
     modifier: Modifier = Modifier,
-    label: String? = null,
-    shape: Shape = RoundedCornerShape(0.dp),
-    content: @Composable BoxScope.() -> Unit = {}
+    shape: Shape = RoundedCornerShape(16.dp),
+    label: String = "",
+    icon: ImageVector? = null,
+    showCross: Boolean = true
 ) {
-    val crossColor = ScanBracket.copy(alpha = 0.3f)
-    Box(
-        modifier = modifier
-            .clip(shape)
-            .background(CameraBackground)
-            .drawBehind { drawCross(crossColor) }
-    ) {
-        if (label != null) {
-            Text(
-                text = label,
-                color = TextMuted,
-                modifier = Modifier
-                    .align(Alignment.Center)
-                    .background(CameraBackground)
-                    .padding(horizontal = 6.dp)
-            )
-        }
-        content()
-    }
+    PlaceholderBox(
+        modifier = modifier,
+        shape = shape,
+        label = label,
+        icon = icon,
+        showCross = showCross
+    )
 }
 
 /**
- * PURPOSE: The four corner brackets that frame where the user's hands should be (scanning guide).
- * EDITABLE: Colors come from ScanBracket in Color.kt.
+ * Draws four corner brackets to guide the user's hand placement.
  */
 @Composable
-fun ScanFrame(modifier: Modifier = Modifier) {
+fun ScanFrame(
+    modifier: Modifier = Modifier
+) {
     Canvas(modifier = modifier) {
         val strokeWidth = 6.dp.toPx()
         val half = strokeWidth / 2f
         val arm = size.minDimension * 0.18f
 
-        // FUNCTION: Draws one "L" shaped corner. dx/dy (+1 or -1) choose which way the arms point.
-        fun corner(x: Float, y: Float, dx: Float, dy: Float) {
-            drawLine(ScanBracket, Offset(x, y), Offset(x + dx * arm, y), strokeWidth, StrokeCap.Round)
-            drawLine(ScanBracket, Offset(x, y), Offset(x, y + dy * arm), strokeWidth, StrokeCap.Round)
+        // Draws one L-shaped corner.
+        fun corner(
+            x: Float,
+            y: Float,
+            dx: Float,
+            dy: Float
+        ) {
+            drawLine(
+                color = ScanBracket,
+                start = Offset(x, y),
+                end = Offset(x + dx * arm, y),
+                strokeWidth = strokeWidth,
+                cap = StrokeCap.Round
+            )
+
+            drawLine(
+                color = ScanBracket,
+                start = Offset(x, y),
+                end = Offset(x, y + dy * arm),
+                strokeWidth = strokeWidth,
+                cap = StrokeCap.Round
+            )
         }
-        corner(half, half, 1f, 1f)                              // top-left
-        corner(size.width - half, half, -1f, 1f)                // top-right
-        corner(half, size.height - half, 1f, -1f)               // bottom-left
-        corner(size.width - half, size.height - half, -1f, -1f) // bottom-right
+
+        // Top-left
+        corner(half, half, 1f, 1f)
+
+        // Top-right
+        corner(size.width - half, half, -1f, 1f)
+
+        // Bottom-left
+        corner(half, size.height - half, 1f, -1f)
+
+        // Bottom-right
+        corner(
+            size.width - half,
+            size.height - half,
+            -1f,
+            -1f
+        )
     }
 }

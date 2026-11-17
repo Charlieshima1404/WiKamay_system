@@ -1,3 +1,4 @@
+
 package com.wikamay.app.ui.screens
 
 import androidx.activity.compose.BackHandler
@@ -54,176 +55,260 @@ import com.wikamay.app.ui.theme.TextMuted
 
 // ==========================================
 // SCREEN TRANSITION ANIMATION
-// EDIT HERE: Adjust duration and feel of the lesson page -> AR transition.
 // ==========================================
 
-// EDITABLE: How long (milliseconds) the page takes to move into AR mode and back. Larger = slower.
 private const val AR_TRANSITION_DURATION_MS = 450
 
 // ==========================================
 // AR INTERFACE DESIGN
-// EDIT HERE: Appearance of the lesson page while AR mode is open.
 // ==========================================
 
-// EDITABLE: Color the lesson title/category turn into while AR mode is open (wireframe: white on gray).
 private val AR_TITLE_COLOR = Color.White
-
-// EDITABLE: How faded the description and Previous/Next buttons become in AR mode (0f = unchanged, 1f = invisible).
 private const val AR_BOTTOM_FADE = 0.6f
-
-// EDITABLE: Distance (in dp) the "Sign video (placeholder)" label sits above the bottom edge of the
-// video box. Raised so it does not overlap the TRY button.
 private val VIDEO_LABEL_BOTTOM_PADDING = 72.dp
 
 /**
- * PURPOSE: Lesson details screen (wireframe: "lesson 1 - Greetings", big video placeholder,
- * sign name and description).
- * FUNCTION: Shows one lesson. Previous/Next lesson buttons switch to the neighboring lesson
- * without opening new screens.
+ * PURPOSE:
+ * Lesson details screen.
  *
- * NAVIGATION: [onBack] returns to the Tutorials list; [onReturnToTranslation] jumps to Translation.
- * While AR mode is open, the Back button and the phone's Back gesture close AR mode first
- * (returning to the normal lesson page) instead of leaving the screen.
+ * FUNCTION:
+ * Shows one lesson. Previous/Next buttons switch between lessons.
  *
- * @param initialLessonId Id of the lesson the user opened from the list.
+ * NAVIGATION:
+ * onBack returns to Tutorials.
+ * onReturnToTranslation opens Translation.
+ *
+ * AR MODE:
+ * Back button and phone Back gesture close AR mode first.
  */
+
 @Composable
 fun LessonDetailScreen(
     initialLessonId: Int,
     onBack: () -> Unit,
     onReturnToTranslation: () -> Unit
 ) {
-    // PURPOSE: Position of the lesson currently displayed in SampleData.lessons.
-    var lessonPosition by rememberSaveable {
-        mutableStateOf(SampleData.lessons.indexOfFirst { it.id == initialLessonId }.coerceAtLeast(0))
-    }
-    // PURPOSE: Whether the "video not available yet" pop-up is visible.
-    var showVideoDialog by remember { mutableStateOf(false) }
 
-    // PURPOSE: Whether the AR experience is currently open on this lesson page.
-    var isArMode by rememberSaveable { mutableStateOf(false) }
+    // ==========================================
+    // LESSON STATE
+    // ==========================================
+
+    var lessonPosition by rememberSaveable {
+        mutableStateOf(
+            SampleData.lessons.indexOfFirst {
+                it.id == initialLessonId
+            }.coerceAtLeast(0)
+        )
+    }
+
+    // Video placeholder dialog
+    var showVideoDialog by remember {
+        mutableStateOf(false)
+    }
+
+    // ==========================================
+    // AR MODE STATE
+    // ==========================================
+
+    var isArMode by rememberSaveable {
+        mutableStateOf(false)
+    }
+
+    // ==========================================
+    // CAMERA SWITCH STATE
+    // ==========================================
+    // false = Back camera
+    // true = Front camera
+
+    var isFrontCamera by rememberSaveable {
+        mutableStateOf(false)
+    }
+
+    // Switch between front and back cameras
+    val switchCamera: () -> Unit = {
+        isFrontCamera = !isFrontCamera
+    }
 
     // ==========================================
     // SCREEN TRANSITION ANIMATION
-    // EDIT HERE: arProgress goes 0f (normal lesson page) -> 1f (AR mode) and back.
-    // Change the easing (e.g. LinearEasing) or AR_TRANSITION_DURATION_MS to change the feel.
-    // Everything that moves (camera panel, preview, text fade) is driven by this one value.
     // ==========================================
+
     val arProgress by animateFloatAsState(
         targetValue = if (isArMode) 1f else 0f,
-        animationSpec = tween(durationMillis = AR_TRANSITION_DURATION_MS, easing = FastOutSlowInEasing),
+        animationSpec = tween(
+            durationMillis = AR_TRANSITION_DURATION_MS,
+            easing = FastOutSlowInEasing
+        ),
         label = "arTransition"
     )
 
     // ==========================================
     // TRY BUTTON ACTION
-    // EDIT HERE: Modify what happens when the user enters / leaves the AR experience.
-    // FUNCTION: openAr is called by the TRY button; closeAr by the Back button / Back gesture.
-    // Future development: start the camera and the sign recognition in openAr, stop them in closeAr.
     // ==========================================
-    val openAr: () -> Unit = { isArMode = true }
-    val closeAr: () -> Unit = { isArMode = false }
 
-    // NAVIGATION: Phone Back gesture/button closes AR mode first. When AR is closed this handler is
-    // disabled, so Back behaves exactly as before (returns to the Tutorials list).
-    BackHandler(enabled = isArMode) { closeAr() }
+    val openAr: () -> Unit = {
+        isArMode = true
+    }
 
-    // PURPOSE: Screen position of the video box (used as the start of the AR transition).
-    var videoBoundsInRoot by remember { mutableStateOf(Rect.Zero) }
-    // PURPOSE: Screen position of this whole screen container (used to convert the bounds above).
-    var containerOrigin by remember { mutableStateOf(Offset.Zero) }
+    val closeAr: () -> Unit = {
+        isArMode = false
+    }
 
-    // PURPOSE: Fades the description and Previous/Next row while AR mode is open (wireframe: faded text).
+    // Phone Back gesture closes AR first
+    BackHandler(enabled = isArMode) {
+        closeAr()
+    }
+
+    // ==========================================
+    // SCREEN POSITION TRACKING
+    // ==========================================
+
+    var videoBoundsInRoot by remember {
+        mutableStateOf(Rect.Zero)
+    }
+
+    var containerOrigin by remember {
+        mutableStateOf(Offset.Zero)
+    }
+
+    // ==========================================
+    // AR TEXT ANIMATION
+    // ==========================================
+
     val arBottomAlpha = 1f - AR_BOTTOM_FADE * arProgress
-    // PURPOSE: Title text only turns white once the camera panel has grown behind it (avoids white-on-white).
-    // EDITABLE: Change 0.55f / 0.45f to make the title change color earlier or later.
-    val arTitleProgress = ((arProgress - 0.55f) / 0.45f).coerceIn(0f, 1f)
+
+    val arTitleProgress =
+        ((arProgress - 0.55f) / 0.45f).coerceIn(0f, 1f)
 
     val lesson = SampleData.lessons[lessonPosition]
 
-    // PURPOSE: Root container. It holds (back to front): AR camera panel, the original lesson page,
-    // and the AR reference preview. The page background moved here from the Column (same color).
+    // ==========================================
+    // ROOT CONTAINER
+    // ==========================================
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .onGloballyPositioned { containerOrigin = it.positionInRoot() }
+            .onGloballyPositioned {
+                containerOrigin = it.positionInRoot()
+            }
     ) {
+
         // ==========================================
-        // AR INTERFACE DESIGN
-        // EDIT HERE: The AR camera panel (gray area growing out of the video box).
-        // Layout and colors: components/ArSignPhraseOverlay.kt. Drawn BEHIND the lesson page so the
-        // title and Back button stay visible on top of it.
+        // AR CAMERA PANEL
         // ==========================================
+        // CameraX live preview with front/back switching.
+        // Camera switch button is positioned at the center
+        // inside ArCameraPanel.
+
         if (arProgress > 0f) {
+
             ArCameraPanel(
                 progress = arProgress,
-                startBounds = videoBoundsInRoot.translate(-containerOrigin)
+                startBounds = videoBoundsInRoot.translate(-containerOrigin),
+
+                // Current camera selection
+                isFrontCamera = isFrontCamera,
+
+                // Switch front/back camera
+                onSwitchCamera = switchCamera
             )
         }
+
+        // ==========================================
+        // ORIGINAL LESSON PAGE
+        // ==========================================
 
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .systemBarsPadding()
-                .padding(horizontal = 20.dp, vertical = 12.dp)
+                .padding(
+                    horizontal = 20.dp,
+                    vertical = 12.dp
+                )
         ) {
-            // NAVIGATION: In AR mode the Back button closes AR (returns to the lesson page).
+
+            // Navigation
             LearningTopBar(
                 onBack = if (isArMode) closeAr else onBack,
                 onReturnToTranslation = onReturnToTranslation
             )
+
             Spacer(Modifier.height(12.dp))
 
+            // Lesson title
             Text(
                 "Lesson ${lesson.id}",
                 style = MaterialTheme.typography.headlineMedium,
-                color = lerp(PrimarySlate, AR_TITLE_COLOR, arTitleProgress)
+                color = lerp(
+                    PrimarySlate,
+                    AR_TITLE_COLOR,
+                    arTitleProgress
+                )
             )
+
             Text(
                 lesson.category,
                 style = MaterialTheme.typography.titleMedium,
-                color = lerp(TextMuted, AR_TITLE_COLOR, arTitleProgress)
+                color = lerp(
+                    TextMuted,
+                    AR_TITLE_COLOR,
+                    arTitleProgress
+                )
             )
+
             Spacer(Modifier.height(12.dp))
 
-            // ---- Video placeholder with a play button ----
-            // PLACEHOLDER: Future development plays the local MP4 tutorial video here.
-            // FUNCTION: This box is also where the AR transition starts: it fades out while the AR
-            // camera panel grows from exactly this position.
+            // ==========================================
+            // VIDEO PLACEHOLDER
+            // ==========================================
+
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
-                    .onGloballyPositioned { videoBoundsInRoot = it.boundsInRoot() }
-                    .graphicsLayer { alpha = 1f - arProgress }
+                    .onGloballyPositioned {
+                        videoBoundsInRoot = it.boundsInRoot()
+                    }
+                    .graphicsLayer {
+                        alpha = 1f - arProgress
+                    }
             ) {
+
                 PlaceholderBox(
                     modifier = Modifier.fillMaxSize(),
                     icon = Icons.Filled.Videocam
                 )
+
+                // Play button
                 RoundActionButton(
                     icon = Icons.Filled.PlayArrow,
                     contentDescription = "Play lesson video",
-                    onClick = { showVideoDialog = true },
+                    onClick = {
+                        showVideoDialog = true
+                    },
                     size = 64.dp,
                     enabled = !isArMode,
                     modifier = Modifier.align(Alignment.Center)
                 )
+
+                // Video label
                 Text(
                     text = "Sign video (placeholder)",
                     color = TextMuted,
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
-                        .padding(bottom = VIDEO_LABEL_BOTTOM_PADDING)
+                        .padding(
+                            bottom = VIDEO_LABEL_BOTTOM_PADDING
+                        )
                 )
 
                 // ==========================================
-                // TRY BUTTON ACTION
-                // EDIT HERE: The TRY button (wireframe: bottom-center of the video frame).
-                // Text/shape/size/color: PrimaryPillButton in components/Buttons.kt.
-                // Position: the align/padding below. What it does: openAr above.
+                // TRY BUTTON
                 // ==========================================
+
                 PrimaryPillButton(
                     text = "TRY",
                     onClick = openAr,
@@ -233,69 +318,95 @@ fun LessonDetailScreen(
                         .padding(bottom = 12.dp)
                 )
             }
+
             Spacer(Modifier.height(12.dp))
 
-            // ---- Sign name and description ----
+            // ==========================================
+            // SIGN NAME AND DESCRIPTION
+            // ==========================================
+
             Column(
                 modifier = Modifier
                     .alpha(arBottomAlpha)
                     .verticalScroll(rememberScrollState())
             ) {
-                Text(lesson.signName, style = MaterialTheme.typography.titleLarge, color = PrimarySlate)
+
+                Text(
+                    lesson.signName,
+                    style = MaterialTheme.typography.titleLarge,
+                    color = PrimarySlate
+                )
+
                 Spacer(Modifier.height(4.dp))
-                Text(lesson.description, style = MaterialTheme.typography.bodyMedium, color = TextMuted)
+
+                Text(
+                    lesson.description,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextMuted
+                )
             }
+
             Spacer(Modifier.height(12.dp))
 
-            // ---- Previous / Next lesson ----
-            // NOTE: Both buttons are disabled and faded while AR mode is open (wireframe: faded "Next").
+            // ==========================================
+            // PREVIOUS / NEXT LESSON
+            // ==========================================
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .alpha(arBottomAlpha),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                // FUNCTION: Shows the previous lesson. Disabled on the first lesson.
+
+                // Previous lesson
                 SecondaryPillButton(
                     text = "Previous lesson",
-                    onClick = { if (lessonPosition > 0) lessonPosition-- },
+                    onClick = {
+                        if (lessonPosition > 0) {
+                            lessonPosition--
+                        }
+                    },
                     enabled = lessonPosition > 0 && !isArMode
                 )
-                // FUNCTION: Shows the next lesson. Disabled on the last lesson.
+
+                // Next lesson
                 PrimaryPillButton(
                     text = "Next lesson",
-                    onClick = { if (lessonPosition < SampleData.lessons.lastIndex) lessonPosition++ },
-                    enabled = lessonPosition < SampleData.lessons.lastIndex && !isArMode
+                    onClick = {
+                        if (lessonPosition < SampleData.lessons.lastIndex) {
+                            lessonPosition++
+                        }
+                    },
+                    enabled = lessonPosition < SampleData.lessons.lastIndex &&
+                            !isArMode
                 )
             }
+
             Spacer(Modifier.height(8.dp))
         }
 
         // ==========================================
-        // AR INTERFACE DESIGN
-        // EDIT HERE: Sign-reference preview at the top-right (slides in from the right in AR mode).
-        // Size/position/icon: components/ArSignPhraseOverlay.kt (ArReferencePreview).
-        // Future: this is where the sample sign video for the current phrase (lesson.signName) is shown.
+        // AR REFERENCE PREVIEW
         // ==========================================
-        ArReferencePreview(progress = arProgress)
 
-        // ==========================================
-        // AR FUNCTIONALITY  /  FUTURE CUSTOMIZATION
-        // EDIT HERE: Further AR features can be added as extra layers in this Box, above the camera
-        // panel, for example:
-        //  - live camera (CameraX) inside ArCameraPanel,
-        //  - hand/sign recognition results and feedback ("Correct!" / "Try again"),
-        //  - a per-lesson reference video (load it using `lesson` above, so new phrases added to
-        //    SampleData.lessons work automatically),
-        //  - API/AI calls: run them from openAr/closeAr and pass results into these layers.
-        // ==========================================
+        ArReferencePreview(
+            progress = arProgress
+        )
     }
 
+    // ==========================================
+    // VIDEO PLACEHOLDER DIALOG
+    // ==========================================
+
     if (showVideoDialog) {
+
         PlaceholderDialog(
             title = "Video (placeholder)",
             message = "Tutorial videos will be added in a later stage of development.",
-            onDismiss = { showVideoDialog = false }
+            onDismiss = {
+                showVideoDialog = false
+            }
         )
     }
 }

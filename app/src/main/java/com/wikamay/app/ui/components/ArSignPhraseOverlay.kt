@@ -1,3 +1,4 @@
+
 package com.wikamay.app.ui.components
 
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Videocam
+import androidx.compose.material.icons.filled.Cameraswitch
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -51,6 +53,8 @@ private fun mix(
 fun ArCameraPanel(
     progress: Float,
     startBounds: Rect,
+    isFrontCamera: Boolean,
+    onSwitchCamera: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     BoxWithConstraints(
@@ -74,7 +78,7 @@ fun ArCameraPanel(
         }
 
         // ==========================================
-        // LIVE CAMERAX PREVIEW
+        // LIVE CAMERAX PREVIEW + CAMERA SWITCH
         // ==========================================
 
         Box(
@@ -90,13 +94,31 @@ fun ArCameraPanel(
                     height = panelHeight
                 )
         ) {
+
+            // CAMERA PREVIEW
             CameraXPreview(
                 modifier = Modifier.fillMaxSize(),
                 shape = RoundedCornerShape(
                     AR_PANEL_START_CORNER * (1f - progress)
                 ),
-                lensFacing = CameraSelector.LENS_FACING_BACK
+                lensFacing = if (isFrontCamera) {
+                    CameraSelector.LENS_FACING_FRONT
+                } else {
+                    CameraSelector.LENS_FACING_BACK
+                }
             )
+
+            // CAMERA SWITCH BUTTON - CENTER
+            if (progress > 0.9f) {
+                SquareIconButton(
+                    icon = Icons.Filled.Cameraswitch,
+                    contentDescription = "Switch camera",
+                    onClick = onSwitchCamera,
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .offset(x = 0.dp, y = 300.dp)
+                )
+            }
         }
 
         // ==========================================

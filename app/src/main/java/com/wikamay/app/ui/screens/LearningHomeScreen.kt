@@ -25,7 +25,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.School
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -59,8 +58,6 @@ private const val LETTERS_TITLE = "Letters"
 private const val LETTERS_SUBTITLE = "Practice the FSL finger spelling"
 private const val NUMBERS_TITLE = "Numbers"
 private const val NUMBERS_SUBTITLE = "Practice the FSL number handshapes"
-private const val TUTORIALS_TITLE = "Tutorials"
-private const val TUTORIALS_SUBTITLE = "Short lessons for basic FSL signs"
 
 // ==========================================
 // COLORS (this screen only)

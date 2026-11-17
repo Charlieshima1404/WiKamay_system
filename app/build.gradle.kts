@@ -3,6 +3,7 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+    id("org.jetbrains.kotlin.plugin.compose")
 }
 
 android {
@@ -37,10 +38,6 @@ android {
     // PURPOSE: Turns on Jetpack Compose (our approved UI framework).
     buildFeatures {
         compose = true
-    }
-    composeOptions {
-        // NOTE: This version must match the Kotlin version (1.9.24) declared in the root build.gradle.kts.
-        kotlinCompilerExtensionVersion = "1.5.14"
     }
     packaging {
         resources {

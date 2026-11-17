@@ -6,7 +6,7 @@ import androidx.compose.ui.graphics.Color
 // The palette follows the grayscale + slate blue-gray style of the WiKamay wireframe.
 
 // EDITABLE: Main brand color (buttons, selected toggle, borders).
-val PrimarySlate = Color(0xFF194a7a)
+val PrimarySlate = Color(0xFFF5A00F)
 
 // EDITABLE: Page background color.
 val ScreenBackground = Color(0xFFFFFFFF)
@@ -15,7 +15,7 @@ val ScreenBackground = Color(0xFFFFFFFF)
 val SoftBlueGray = Color(0xFFECF0F5)
 
 // EDITABLE: Gray used for the text panels and small square buttons.
-val PanelGray = Color(0xFFC4C4C4)
+val PanelGray = Color(0xffdbf2ff)
 
 // EDITABLE: Gray used for the empty part of the translation toggle.
 val ToggleTrack = Color(0xFFD9D9D9)

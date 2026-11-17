@@ -18,11 +18,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Cameraswitch
 import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -35,6 +35,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.Color
 
 import com.wikamay.app.ui.components.CameraXPreview
 import com.wikamay.app.ui.components.ModeToggle
@@ -96,25 +97,22 @@ fun SignToTextScreen(
             // TOP ROW
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End,
+                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
 
-                TextButton(
+                // CAMERA SWITCH ICON BUTTON
+                SquareIconButton(
+                    icon = Icons.Filled.Cameraswitch,
+                    contentDescription = "Switch camera",
                     onClick = {
                         isFrontCamera = !isFrontCamera
                     }
-                ) {
-                    Text(
-                        text = if (isFrontCamera) {
-                            "Switch to Back"
-                        } else {
-                            "Switch to Front"
-                        },
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
+                )
 
+                Spacer(modifier = Modifier.width(8.dp))
+
+                // LEARNING MENU BUTTON
                 SquareIconButton(
                     icon = Icons.Filled.School,
                     contentDescription = "Open Learning Menu",
@@ -150,23 +148,21 @@ fun SignToTextScreen(
                     )
             ) {
 
-                // Scanning brackets
+                // SCANNING BRACKETS
                 ScanFrame(
                     modifier = Modifier.fillMaxSize()
                 )
 
-                // Camera instruction
+                // CAMERA INSTRUCTION
                 Text(
                     text = SCAN_HINT,
-                    color = androidx.compose.ui.graphics.Color.White,
+                    color = Color.White,
                     style = MaterialTheme.typography.bodyLarge,
                     textAlign = TextAlign.Center,
                     modifier = Modifier
                         .align(Alignment.Center)
                         .background(
-                            androidx.compose.ui.graphics.Color.Black.copy(
-                                alpha = 0.55f
-                            ),
+                            Color.Black.copy(alpha = 0.55f),
                             RoundedCornerShape(8.dp)
                         )
                         .padding(10.dp)

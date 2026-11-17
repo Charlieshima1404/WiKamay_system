@@ -20,6 +20,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.draw.paint
 import com.wikamay.app.R
 import com.wikamay.app.ui.components.PrimaryPillButton
 import com.wikamay.app.ui.theme.PrimarySlate
@@ -40,40 +41,13 @@ fun SplashScreen(onGetStarted: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .systemBarsPadding()
-            .padding(horizontal = 32.dp, vertical = 24.dp),
+            .paint(
+                painter = painterResource(id = R.drawable.wikamay_flashbackground),
+                contentScale = ContentScale.Crop
+            ),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(Modifier.weight(1f))
 
-        // PURPOSE: Application name.
-        Text(
-            text = APP_TITLE,
-            style = MaterialTheme.typography.headlineLarge,
-            color = PrimarySlate
-        )
-
-        Spacer(Modifier.height(16.dp))
-
-        // PURPOSE: Displays the actual WiKamay PNG logo.
-        Image(
-            painter = painterResource(id = R.drawable.wikamay_logo),
-            contentDescription = "WiKamay Logo",
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(120.dp),
-            contentScale = ContentScale.Fit
-        )
-
-        Spacer(Modifier.height(16.dp))
-
-        // PURPOSE: Short introductory message.
-        Text(
-            text = INTRO_MESSAGE,
-            style = MaterialTheme.typography.bodyLarge,
-            textAlign = TextAlign.Center
-        )
 
         Spacer(Modifier.weight(1f))
 
@@ -84,6 +58,6 @@ fun SplashScreen(onGetStarted: () -> Unit) {
             modifier = Modifier.fillMaxWidth(0.6f)
         )
 
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(200.dp))
     }
 }

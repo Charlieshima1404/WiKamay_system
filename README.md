@@ -1,4 +1,4 @@
-# WiKamay – Android UI Prototype
+# WiKamay 
 
 Native Android app (Kotlin + Jetpack Compose) for the capstone project
 **WiKamay: An Android-Based Mobile Application for Filipino Sign Language Translation and Learning**.

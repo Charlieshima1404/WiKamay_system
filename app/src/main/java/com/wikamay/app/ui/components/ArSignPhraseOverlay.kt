@@ -1,4 +1,3 @@
-
 package com.wikamay.app.ui.components
 
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -17,6 +16,7 @@ import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.camera.core.CameraSelector
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.input.pointer.pointerInput
@@ -57,10 +57,7 @@ fun ArCameraPanel(
         modifier = modifier.fillMaxSize()
     ) {
         val density = LocalDensity.current
-
-        val containerWidthPx = with(density) {
-            maxWidth.toPx()
-        }
+        val containerWidthPx = constraints.maxWidth.toFloat()
 
         // Animated panel boundaries
         val left = mix(startBounds.left, 0f, progress)
@@ -97,7 +94,8 @@ fun ArCameraPanel(
                 modifier = Modifier.fillMaxSize(),
                 shape = RoundedCornerShape(
                     AR_PANEL_START_CORNER * (1f - progress)
-                )
+                ),
+                lensFacing = CameraSelector.LENS_FACING_BACK
             )
         }
 

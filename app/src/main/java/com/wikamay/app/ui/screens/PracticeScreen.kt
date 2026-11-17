@@ -30,7 +30,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.wikamay.app.ui.components.CameraPlaceholder
+import com.wikamay.app.ui.components.CameraXPreview
+import androidx.camera.core.CameraSelector
 import com.wikamay.app.ui.components.LearningTopBar
 import com.wikamay.app.ui.components.PlaceholderBox
 import com.wikamay.app.ui.components.PlaceholderDialog
@@ -90,19 +91,23 @@ fun PracticeScreen(
         )
         Spacer(Modifier.height(8.dp))
 
-        // ---- Practice area: fake camera + scan frame + reference handshape ----
-        // PLACEHOLDER: Future development shows the live camera with a 2D handshape overlay here.
-        CameraPlaceholder(
+
+// ---- Practice area: Live CameraX + scan frame + reference handshape ----
+        CameraXPreview(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth(),
-            label = "Practice area\n(camera placeholder)",
-            shape = RoundedCornerShape(16.dp)
+            shape = RoundedCornerShape(16.dp),
+            lensFacing = CameraSelector.LENS_FACING_BACK
         ) {
-            ScanFrame(modifier = Modifier
-                .fillMaxSize()
-                .padding(24.dp))
-            // PLACEHOLDER: Replace with the real reference handshape image for the selected item.
+            // Scan frame overlay
+            ScanFrame(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(24.dp)
+            )
+
+            // Reference handshape overlay
             PlaceholderBox(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
@@ -113,6 +118,7 @@ fun PracticeScreen(
                 showCross = false
             )
         }
+
         Spacer(Modifier.height(8.dp))
         Text(
             text = "Align your hand to the overlay",

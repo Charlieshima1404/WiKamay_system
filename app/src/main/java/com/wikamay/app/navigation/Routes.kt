@@ -13,6 +13,9 @@ object Routes {
     const val NUMBERS = "numbers"
     const val TUTORIALS = "tutorials"
 
+    // PURPOSE: Lesson list of ONE category (Greetings, Survival, ...): {category} is the category name.
+    const val CATEGORY = "category/{category}"
+
     // PURPOSE: Practice screen: {type} is "alphabet" or "numbers", {index} is the selected item position.
     const val PRACTICE = "practice/{type}/{index}"
     // PURPOSE: Lesson details screen: {id} is the lesson number.
@@ -26,4 +29,7 @@ object Routes {
 
     // FUNCTION: Builds the real route text, e.g. lesson(3) -> "lesson/3".
     fun lesson(id: Int) = "lesson/$id"
+
+    // FUNCTION: Builds the real route text, e.g. category("Food") -> "category/Food".
+    fun category(name: String) = "category/$name"
 }

@@ -26,6 +26,7 @@ import com.wikamay.app.ui.screens.TutorialsScreen
  *                              |- Alphabet -> Practice
  *                              |- Numbers  -> Practice
  *                              |- Tutorials -> Lesson details
+ *                              |- Category (Greetings, Survival, ...) -> Lesson details
  * There is no Home Screen: the Splash goes straight to Text to Sign.
  */
 @Composable
@@ -88,7 +89,9 @@ fun WiKamayNavGraph() {
                 onBack = { navController.popBackStack() },
                 onOpenAlphabet = { navController.navigate(Routes.ALPHABET) },
                 onOpenNumbers = { navController.navigate(Routes.NUMBERS) },
-                onOpenTutorials = { navController.navigate(Routes.TUTORIALS) }
+                onOpenTutorials = { navController.navigate(Routes.TUTORIALS) },
+                // NAVIGATION: Category card (Greetings, Survival, ...) -> that category's lesson list.
+                onOpenCategory = { category -> navController.navigate(Routes.category(category)) }
             )
         }
 
@@ -145,6 +148,19 @@ fun WiKamayNavGraph() {
                 onViewLesson = { lessonId -> navController.navigate(Routes.lesson(lessonId)) },
                 onBack = { navController.popBackStack() },
                 onReturnToTranslation = returnToTranslation
+            )
+        }
+
+        // ---- Category lesson list (reuses the Tutorials screen, filtered by category) ----
+        composable(
+            route = Routes.CATEGORY,
+            arguments = listOf(navArgument("category") { type = NavType.StringType })
+        ) { backStackEntry ->
+            TutorialsScreen(
+                onViewLesson = { lessonId -> navController.navigate(Routes.lesson(lessonId)) },
+                onBack = { navController.popBackStack() },
+                onReturnToTranslation = returnToTranslation,
+                category = backStackEntry.arguments?.getString("category")
             )
         }
 

@@ -1,10 +1,10 @@
 package com.wikamay.app.ui.screens
 
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -52,12 +52,37 @@ import com.wikamay.app.ui.theme.TextMuted
 private const val MODULE_TITLE = "FSL Learning Module"
 private const val MODULE_DESCRIPTION =
     "Practice the FSL alphabet and numbers, or follow short tutorial lessons to learn basic signs."
-private const val BASIC_FSL_TITLE = "BASIC FSL"
-private const val BASIC_FSL_DESCRIPTION = "Learn the FSL the easy way, one sign, one step at a time!"
-private const val LETTERS_TITLE = "Letters"
-private const val LETTERS_SUBTITLE = "Practice the FSL finger spelling"
+private const val FINGER_SPELLING_TITLE = "Finger Spelling"
+private const val FINGER_SPELLING_DESCRIPTION = "Practice the FSL finger spelling"
 private const val NUMBERS_TITLE = "Numbers"
 private const val NUMBERS_SUBTITLE = "Practice the FSL number handshapes"
+
+// ==========================================
+// LEARNING CATEGORIES
+// EDIT HERE: One card is created for every line below, in this order, under the Numbers card.
+// - title: shown on the card AND used to find the lessons, so it must match the category name used
+//   in SampleData.lessons (data/SampleData.kt).
+// - subtitle: the small text under the title.
+// - iconRes: PNG for the left icon area, e.g. iconRes = R.drawable.ic_greetings.
+//   Leave it out (null) to keep the icon area empty until your PNG is ready.
+// ==========================================
+private data class LearnCategory(
+    val title: String,
+    val subtitle: String,
+    @DrawableRes val iconRes: Int? = null
+)
+
+private val LEARN_CATEGORIES = listOf(
+    LearnCategory("Greetings", "Learn FSL signs for greeting people"),
+    LearnCategory("Survival", "Learn FSL signs for urgent needs"),
+    LearnCategory("Calendar", "Learn FSL signs for dates and time"),
+    LearnCategory("Days", "Learn FSL signs for the days of the week"),
+    LearnCategory("Family", "Learn FSL signs for family members"),
+    LearnCategory("Relationships", "Learn FSL signs for relationships"),
+    LearnCategory("Color", "Learn FSL signs for colors"),
+    LearnCategory("Food", "Learn FSL signs for food"),
+    LearnCategory("Drink", "Learn FSL signs for drinks")
+)
 
 // ==========================================
 // COLORS (this screen only)
@@ -75,21 +100,25 @@ private val CardShadow = 6.dp
 
 /**
  * PURPOSE: The LEARNING MENU. It opens from the upper-right button of both translation screens.
- * Layout (top to bottom): header, BASIC FSL card (TRY), divider, Letters card, Numbers card,
- * and the Tutorials card (kept so the Tutorials section stays reachable).
+ * Layout (top to bottom): header, Finger Spelling card (TRY), divider, Numbers card, then one card
+ * for each learning category (Greetings, Survival, Calendar, Days, Family, Relationships, Color,
+ * Food, Drink).
  *
- * NAVIGATION (unchanged):
+ * NAVIGATION:
  * - [onBack]: the top-left button returns to the Translation screen the user came from.
- * - [onOpenAlphabet]: TRY button AND the Letters card.
- * - [onOpenNumbers]: the Numbers card.
- * - [onOpenTutorials]: the Tutorials card.
+ * - [onOpenAlphabet]: the TRY button of the Finger Spelling card (opens the letter selection screen).
+ * - [onOpenNumbers]: the Numbers card (unchanged).
+ * - [onOpenCategory]: a category card; receives the category name (opens that category's lessons).
+ * - [onOpenTutorials]: kept in the signature for compatibility. The full lesson list route still
+ *   exists in the NavGraph, but no card on this screen opens it any more.
  */
 @Composable
 fun LearningHomeScreen(
     onBack: () -> Unit,
     onOpenTutorials: () -> Unit,
     onOpenAlphabet: () -> Unit,
-    onOpenNumbers: () -> Unit
+    onOpenNumbers: () -> Unit,
+    onOpenCategory: (String) -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -154,7 +183,7 @@ fun LearningHomeScreen(
             Spacer(Modifier.height(4.dp))
 
             // ==========================================
-            // BASIC FSL CARD
+            // FINGER SPELLING CARD (replaces the former BASIC FSL card)
             // EDIT HERE: Card color -> CardCream, corner -> CardCorner, heading color -> AccentOrange.
             // ==========================================
             Column(
@@ -172,13 +201,13 @@ fun LearningHomeScreen(
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Text(
-                        BASIC_FSL_TITLE,
-                        fontSize = 26.sp,
+                        FINGER_SPELLING_TITLE,
+                        fontSize = 22.sp, // slightly smaller than before so "Finger Spelling" fits beside its description
                         fontWeight = FontWeight.ExtraBold,
                         color = AccentOrange
                     )
                     Text(
-                        BASIC_FSL_DESCRIPTION,
+                        FINGER_SPELLING_DESCRIPTION,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onBackground,
                         modifier = Modifier.weight(1f)
@@ -187,7 +216,7 @@ fun LearningHomeScreen(
                 Spacer(Modifier.height(12.dp))
 
                 // ------------------------------------------
-                // BASIC FSL IMAGE (PNG)
+                // FINGER SPELLING IMAGE (PNG)
                 // EDIT HERE: This keeps the image your screen already used (R.drawable.fsl_alphabet_preview).
                 // To use your new PNG, add it to res/drawable and change the drawable name below.
                 // Shape/proportion: aspectRatio(3f) = 3 times wider than tall. Border: PrimarySlate, 3.dp.
@@ -207,7 +236,7 @@ fun LearningHomeScreen(
                 // NAVIGATION: TRY -> onOpenAlphabet (opens the letter selection screen), unchanged.
                 PrimaryPillButton(
                     text = "TRY",
-                    onClick = onOpenTutorials,
+                    onClick = onOpenAlphabet,
                     modifier = Modifier.width(140.dp)
                 )
             }
@@ -227,29 +256,12 @@ fun LearningHomeScreen(
             Spacer(Modifier.height(20.dp))
 
             // ==========================================
-            // LETTERS / NUMBERS / TUTORIALS CARDS
-            // EDIT HERE: Text -> constants at the top of this file. Icons -> see LearnMenuCard below.
+            // NUMBERS CARD + LEARNING CATEGORY CARDS
+            // EDIT HERE: Text -> constants and LEARN_CATEGORIES at the top of this file.
+            // Icons -> iconRes in LEARN_CATEGORIES (categories) / the icon slot below (Numbers).
             // ==========================================
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                // NAVIGATION: Letters card -> onOpenAlphabet (opens the letter selection screen).
-                LearnMenuCard(
-                    title = LETTERS_TITLE,
-                    subtitle = LETTERS_SUBTITLE,
-                    onClick = onOpenAlphabet,
-                    icon = {
-                        Image(
-                            painter = painterResource(id = R.drawable.from_a_to_z_svgrepo_com),
-                            contentDescription = null,
-                            modifier = Modifier.fillMaxSize(),
-                            colorFilter = ColorFilter.tint(Color(0xFFF5A00F))
-                        )
-                        // ---- LETTERS ICON (PNG PLACEHOLDER) ----
-                        // EDIT HERE: Replace this comment with:
-                        // Image(painter = painterResource(id = R.drawable.YOUR_LETTERS_ICON),
-                        //       contentDescription = null, modifier = Modifier.fillMaxSize())
-                    }
-                )
-                // NAVIGATION: Numbers card -> onOpenNumbers (opens the number selection screen).
+                // NAVIGATION: Numbers card -> onOpenNumbers (opens the number selection screen). Unchanged.
                 LearnMenuCard(
                     title = NUMBERS_TITLE,
                     subtitle = NUMBERS_SUBTITLE,
@@ -263,9 +275,27 @@ fun LearningHomeScreen(
                         )
                     }
                 )
-                // NAVIGATION: Tutorials card -> onOpenTutorials (opens the tutorial list).
-                // KEPT from the previous screen (not in the reference image) so Tutorials stays reachable.
-                // It keeps its original icon. To hide it, delete this block (the callback stays in the signature).
+                // NAVIGATION: Each category card -> onOpenCategory(category name), which opens the
+                // lesson list of that category (same layout as the existing Tutorials list).
+                LEARN_CATEGORIES.forEach { category ->
+                    LearnMenuCard(
+                        title = category.title,
+                        subtitle = category.subtitle,
+                        onClick = { onOpenCategory(category.title) },
+                        icon = {
+                            // ---- CATEGORY ICON (PNG) ----
+                            // EDIT HERE: Set iconRes for this category in LEARN_CATEGORIES.
+                            // The area stays empty while iconRes is null.
+                            category.iconRes?.let { iconRes ->
+                                Image(
+                                    painter = painterResource(id = iconRes),
+                                    contentDescription = null,
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                            }
+                        }
+                    )
+                }
             }
             Spacer(Modifier.height(24.dp))
         }

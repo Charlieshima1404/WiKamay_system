@@ -13,7 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Videocam
@@ -42,13 +42,21 @@ import com.wikamay.app.ui.theme.TextMuted
  * - [onViewLesson]: opens the lesson details screen for the tapped lesson (receives the lesson id).
  * - [onBack]: one step back to the Learning Menu.
  * - [onReturnToTranslation]: jumps back to the Translation screen.
+ *
+ * CATEGORY: When [category] is given (Greetings, Survival, Food, ...), only the lessons of that category
+ * are listed and the category name replaces the "Learn basic FSL" subtitle. When it is null the screen
+ * behaves exactly as before and lists every lesson.
  */
 @Composable
 fun TutorialsScreen(
     onViewLesson: (Int) -> Unit,
     onBack: () -> Unit,
-    onReturnToTranslation: () -> Unit
+    onReturnToTranslation: () -> Unit,
+    category: String? = null
 ) {
+    // FUNCTION: Lessons shown in the list (all lessons, or only the chosen category).
+    val lessons = if (category == null) SampleData.lessons else SampleData.lessons.filter { it.category == category }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -61,7 +69,7 @@ fun TutorialsScreen(
 
         Text("FSL Learning Module", style = MaterialTheme.typography.headlineMedium, color = PrimarySlate)
         Spacer(Modifier.height(8.dp))
-        Text("Learn basic FSL", style = MaterialTheme.typography.titleMedium, color = PrimarySlate)
+        Text(category ?: "Learn basic FSL", style = MaterialTheme.typography.titleMedium, color = PrimarySlate)
         Spacer(Modifier.height(8.dp))
 
         // PURPOSE: Scrollable list. One LessonCard is created for every lesson in SampleData.lessons.
@@ -69,16 +77,16 @@ fun TutorialsScreen(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            items(SampleData.lessons) { lesson ->
-                LessonCard(lesson = lesson, onViewLesson = { onViewLesson(lesson.id) })
+            itemsIndexed(lessons) { index, lesson ->
+                LessonCard(lesson = lesson, number = index + 1, onViewLesson = { onViewLesson(lesson.id) })
             }
         }
     }
 }
 
-/** PURPOSE: One lesson entry in the list. */
+/** PURPOSE: One lesson entry in the list. [number] is its position in the list (Lesson 1, 2, 3, ...). */
 @Composable
-private fun LessonCard(lesson: Lesson, onViewLesson: () -> Unit) {
+private fun LessonCard(lesson: Lesson, number: Int, onViewLesson: () -> Unit) {
     val shape = RoundedCornerShape(12.dp)
     Row(
         modifier = Modifier
@@ -98,7 +106,7 @@ private fun LessonCard(lesson: Lesson, onViewLesson: () -> Unit) {
         )
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = "Lesson ${lesson.id} - ${lesson.category}",
+                text = "Lesson $number - ${lesson.category}",
                 style = MaterialTheme.typography.bodyMedium,
                 color = TextMuted
             )

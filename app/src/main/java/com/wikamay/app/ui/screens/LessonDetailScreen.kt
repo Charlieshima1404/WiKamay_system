@@ -93,9 +93,17 @@ fun LessonDetailScreen(
     // LESSON STATE
     // ==========================================
 
+    // FUNCTION: Lessons of the same category as the opened lesson (Greetings, Survival, Food, ...).
+    // Previous / Next lesson move only inside this category.
+    val categoryLessons = remember(initialLessonId) {
+        val opened = SampleData.lessons.firstOrNull { it.id == initialLessonId }
+        if (opened == null) SampleData.lessons
+        else SampleData.lessons.filter { it.category == opened.category }
+    }
+
     var lessonPosition by rememberSaveable {
         mutableStateOf(
-            SampleData.lessons.indexOfFirst {
+            categoryLessons.indexOfFirst {
                 it.id == initialLessonId
             }.coerceAtLeast(0)
         )
@@ -180,7 +188,7 @@ fun LessonDetailScreen(
     val arTitleProgress =
         ((arProgress - 0.55f) / 0.45f).coerceIn(0f, 1f)
 
-    val lesson = SampleData.lessons[lessonPosition]
+    val lesson = categoryLessons[lessonPosition]
 
     // ==========================================
     // ROOT CONTAINER
@@ -240,7 +248,7 @@ fun LessonDetailScreen(
 
             // Lesson title
             Text(
-                "Lesson ${lesson.id}",
+                "Lesson ${lessonPosition + 1}",
                 style = MaterialTheme.typography.headlineMedium,
                 color = lerp(
                     PrimarySlate,
@@ -374,11 +382,11 @@ fun LessonDetailScreen(
                 PrimaryPillButton(
                     text = "Next lesson",
                     onClick = {
-                        if (lessonPosition < SampleData.lessons.lastIndex) {
+                        if (lessonPosition < categoryLessons.lastIndex) {
                             lessonPosition++
                         }
                     },
-                    enabled = lessonPosition < SampleData.lessons.lastIndex &&
+                    enabled = lessonPosition < categoryLessons.lastIndex &&
                             !isArMode
                 )
             }

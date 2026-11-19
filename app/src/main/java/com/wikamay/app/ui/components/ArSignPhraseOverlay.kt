@@ -26,6 +26,9 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import kotlin.math.roundToInt
+import androidx.camera.core.ImageProxy
+import androidx.compose.ui.geometry.Offset
+import com.wikamay.app.ui.components.HandOverlay
 
 // ==========================================
 // AR INTERFACE DESIGN
@@ -55,6 +58,10 @@ fun ArCameraPanel(
     startBounds: Rect,
     isFrontCamera: Boolean,
     onSwitchCamera: () -> Unit,
+    onFrame: (ImageProxy) -> Unit,
+    isCorrect: Boolean = false,
+    handLandmarkPoints: List<List<Offset>> = emptyList(),
+    cameraRotationDegrees: Int = 270,
     modifier: Modifier = Modifier
 ) {
     BoxWithConstraints(
@@ -98,15 +105,21 @@ fun ArCameraPanel(
             // CAMERA PREVIEW
             CameraXPreview(
                 modifier = Modifier.fillMaxSize(),
-                shape = RoundedCornerShape(
-                    AR_PANEL_START_CORNER * (1f - progress)
-                ),
+                shape = RoundedCornerShape(AR_PANEL_START_CORNER * (1f - progress)),
                 lensFacing = if (isFrontCamera) {
                     CameraSelector.LENS_FACING_FRONT
                 } else {
                     CameraSelector.LENS_FACING_BACK
-                }
-            )
+                },
+                onFrame = onFrame
+            ) {
+                HandOverlay(
+                    handLandmarkPoints = handLandmarkPoints,
+                    cameraRotationDegrees = cameraRotationDegrees,
+                    isFrontCamera = isFrontCamera,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
 
             // CAMERA SWITCH BUTTON - CENTER
             if (progress > 0.9f) {
@@ -134,15 +147,12 @@ fun ArCameraPanel(
                     )
                 }
                 .size(
-                    width = with(density) {
-                        startBounds.width.toDp()
-                    },
-                    height = with(density) {
-                        startBounds.height.toDp()
-                    }
+                    with(density) { startBounds.width.toDp() },
+                    with(density) { startBounds.height.toDp() }
                 )
                 .padding(AR_SCAN_FRAME_MARGIN)
-                .alpha(progress)
+                .alpha(progress),
+            isCorrect = isCorrect
         )
     }
 }

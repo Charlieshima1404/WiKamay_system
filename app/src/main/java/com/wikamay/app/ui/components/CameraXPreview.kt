@@ -1,18 +1,21 @@
-
 package com.wikamay.app.ui.components
 
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.pm.PackageManager
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.CameraSelector
+import androidx.camera.core.ImageAnalysis
+import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -24,6 +27,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -36,6 +40,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import java.util.concurrent.Executors
 
 @SuppressLint("MissingPermission")
 @Composable
@@ -44,6 +49,7 @@ fun CameraXPreview(
     shape: Shape = RoundedCornerShape(16.dp),
     lensFacing: Int = CameraSelector.LENS_FACING_FRONT,
     label: String? = null,
+    onFrame: ((ImageProxy) -> Unit)? = null,
     content: @Composable BoxScope.() -> Unit = {}
 ) {
     val context = LocalContext.current
@@ -83,11 +89,25 @@ fun CameraXPreview(
         }
     }
 
+    val analysisExecutor = remember {
+        Executors.newSingleThreadExecutor()
+    }
+
+    // PURPOSE: Remember the latest onFrame lambda that's used for image analysis
+    val currentOnFrame by rememberUpdatedState(onFrame)
+
+    DisposableEffect(analysisExecutor) {
+        onDispose {
+            analysisExecutor.shutdown()
+        }
+    }
+
     DisposableEffect(
         lifecycleOwner,
         previewView,
         lensFacing,
-        hasCameraPermission
+        hasCameraPermission,
+        onFrame != null
     ) {
         var cameraProvider: ProcessCameraProvider? = null
         var disposed = false
@@ -95,18 +115,15 @@ fun CameraXPreview(
         cameraError = null
 
         if (hasCameraPermission) {
-
             val cameraProviderFuture =
                 ProcessCameraProvider.getInstance(context)
 
             val executor = ContextCompat.getMainExecutor(context)
 
             cameraProviderFuture.addListener({
-
                 if (!disposed) {
                     try {
                         val provider = cameraProviderFuture.get()
-
                         cameraProvider = provider
 
                         val selector =
@@ -125,17 +142,54 @@ fun CameraXPreview(
                                 previewView.surfaceProvider
                             )
 
-                            provider.bindToLifecycle(
-                                lifecycleOwner,
-                                selector,
-                                preview
-                            )
+                            if (onFrame != null) {
+
+                                val imageAnalysis =
+                                    ImageAnalysis.Builder()
+                                        .setBackpressureStrategy(
+                                            ImageAnalysis
+                                                .STRATEGY_KEEP_ONLY_LATEST
+                                        )
+                                        .build()
+
+                                imageAnalysis.setAnalyzer(
+                                    analysisExecutor
+                                ) { imageProxy ->
+
+                                    try {
+                                        currentOnFrame?.invoke(imageProxy)
+                                    } catch (exception: Exception) {
+                                        Log.e(
+                                            "CameraXPreview",
+                                            "Frame analysis failed",
+                                            exception
+                                        )
+                                    } finally {
+                                        imageProxy.close()
+                                    }
+                                }
+
+                                provider.bindToLifecycle(
+                                    lifecycleOwner,
+                                    selector,
+                                    preview,
+                                    imageAnalysis
+                                )
+
+                            } else {
+                                provider.bindToLifecycle(
+                                    lifecycleOwner,
+                                    selector,
+                                    preview
+                                )
+                            }
 
                             cameraError = null
 
                         } else {
                             cameraError =
-                                if (lensFacing ==
+                                if (
+                                    lensFacing ==
                                     CameraSelector.LENS_FACING_FRONT
                                 ) {
                                     "Front camera is not available. Check your emulator camera settings."
@@ -145,16 +199,16 @@ fun CameraXPreview(
                         }
 
                     } catch (exception: Exception) {
-
                         cameraError =
                             "Camera initialization failed: " +
-                                    (exception.localizedMessage
-                                        ?: "Unknown camera error")
+                                    (
+                                            exception.localizedMessage
+                                                ?: "Unknown camera error"
+                                            )
 
                         exception.printStackTrace()
                     }
                 }
-
             }, executor)
         }
 
@@ -171,25 +225,20 @@ fun CameraXPreview(
     ) {
 
         if (hasCameraPermission) {
-
             AndroidView(
                 factory = { previewView },
                 modifier = Modifier.fillMaxSize()
             )
-
         }
 
-        // Existing screen overlays
         content()
 
-        // Permission message
         if (!hasCameraPermission) {
-
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
-                androidx.compose.foundation.layout.Column(
+                Column(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
@@ -211,9 +260,7 @@ fun CameraXPreview(
             }
         }
 
-        // Camera error message
         cameraError?.let { error ->
-
             Text(
                 text = error,
                 color = Color.White,
@@ -228,7 +275,6 @@ fun CameraXPreview(
             )
         }
 
-        // Optional label
         if (label != null) {
             Text(
                 text = label,
@@ -246,15 +292,15 @@ fun CameraXPreview(
     }
 }
 
-/**
- * A wrapper / placeholder composable for CameraXPreview.
- */
+
+// PURPOSE: Placeholder for the camera preview
 @Composable
 fun CameraPlaceholder(
     modifier: Modifier = Modifier,
     shape: Shape = RoundedCornerShape(16.dp),
     lensFacing: Int = CameraSelector.LENS_FACING_FRONT,
     label: String? = null,
+    onFrame: ((ImageProxy) -> Unit)? = null,
     content: @Composable BoxScope.() -> Unit = {}
 ) {
     CameraXPreview(
@@ -262,6 +308,7 @@ fun CameraPlaceholder(
         shape = shape,
         lensFacing = lensFacing,
         label = label,
+        onFrame = onFrame,
         content = content
     )
 }

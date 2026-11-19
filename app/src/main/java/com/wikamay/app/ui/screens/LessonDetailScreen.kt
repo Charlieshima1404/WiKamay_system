@@ -18,9 +18,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -45,13 +42,20 @@ import com.wikamay.app.data.SampleData
 import com.wikamay.app.ui.components.ArCameraPanel
 import com.wikamay.app.ui.components.ArReferencePreview
 import com.wikamay.app.ui.components.LearningTopBar
-import com.wikamay.app.ui.components.PlaceholderBox
 import com.wikamay.app.ui.components.PlaceholderDialog
 import com.wikamay.app.ui.components.PrimaryPillButton
-import com.wikamay.app.ui.components.RoundActionButton
 import com.wikamay.app.ui.components.SecondaryPillButton
 import com.wikamay.app.ui.theme.PrimarySlate
 import com.wikamay.app.ui.theme.TextMuted
+import android.util.Log
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.platform.LocalContext
+import com.wikamay.app.ml.HandLandmark
+import com.wikamay.app.ml.HandLandmarkPreprocessor
+import com.wikamay.app.ml.Sequence
+import com.wikamay.app.ui.components.LearningMedia
 
 // ==========================================
 // SCREEN TRANSITION ANIMATION
@@ -65,7 +69,6 @@ private const val AR_TRANSITION_DURATION_MS = 450
 
 private val AR_TITLE_COLOR = Color.White
 private const val AR_BOTTOM_FADE = 0.6f
-private val VIDEO_LABEL_BOTTOM_PADDING = 72.dp
 
 /**
  * PURPOSE:
@@ -137,6 +140,14 @@ fun LessonDetailScreen(
         isFrontCamera = !isFrontCamera
     }
 
+    var cameraRotationDegrees by remember {
+        mutableStateOf(270)
+    }
+
+    val handLandmarkPoints = remember {
+        mutableStateOf<List<List<Offset>>>(emptyList())
+    }
+
     // ==========================================
     // SCREEN TRANSITION ANIMATION
     // ==========================================
@@ -191,6 +202,140 @@ fun LessonDetailScreen(
     val lesson = categoryLessons[lessonPosition]
 
     // ==========================================
+    // SIGN RECOGNITION STATE
+    // ==========================================
+
+        val context = LocalContext.current
+
+    // The expected sign changes when the lesson changes.
+        val expectedLabel = rememberUpdatedState(lesson.signName)
+
+    // Recognition feedback
+        var isCorrect by remember {
+            mutableStateOf(false)
+        }
+
+        var matchingPredictionCount by remember {
+            mutableStateOf(0)
+        }
+
+        var lastMatchingLabel by remember {
+            mutableStateOf("")
+        }
+
+    // ==========================================
+    // RECOGNITION MANAGER
+    // ==========================================
+
+    val recognitionManager = remember(context) {
+        Sequence(
+            context = context,
+            onUpdate = { update ->
+
+                // Dynamic prediction is used for phrase practice.
+                val prediction = update.dynamicPrediction
+
+                if (prediction != null) {
+
+                    val predictedLabel = prediction.label
+                        .trim()
+                        .uppercase()
+                        .replace("_", " ")
+                        .replace(Regex("\\s+"), " ")
+
+                    val targetLabel = expectedLabel.value
+                        .trim()
+                        .uppercase()
+                        .replace("_", " ")
+                        .replace(Regex("\\s+"), " ")
+
+                    if (predictedLabel == targetLabel) {
+
+                        if (lastMatchingLabel == predictedLabel) {
+                            matchingPredictionCount++
+                        } else {
+                            lastMatchingLabel = predictedLabel
+                            matchingPredictionCount = 1
+                        }
+
+                        if (matchingPredictionCount >= 3) {
+                            isCorrect = true
+                        }
+
+                    } else {
+                        matchingPredictionCount = 0
+                        lastMatchingLabel = ""
+                        isCorrect = false
+                    }
+                }
+            },
+            onError = { message ->
+                Log.e("LessonRecognition", message)
+            }
+        )
+    }
+
+    // ==========================================
+    // HAND LANDMARK DETECTOR
+    // ==========================================
+
+    val handLandmarker = remember(context, recognitionManager) {
+        HandLandmark(
+            context = context,
+            onResult = { result ->
+
+                val extracted =
+                    HandLandmarkPreprocessor.extract(result)
+
+                handLandmarkPoints.value = result.landmarks().map { hand ->
+                    hand.map { landmark ->
+                        Offset(
+                            x = landmark.x(),
+                            y = landmark.y()
+                        )
+                    }
+                }
+
+                recognitionManager.processFrame(extracted)
+            },
+            onError = { message ->
+                Log.e("LessonHandLandmark", message)
+            }
+        )
+    }
+
+    // ==========================================
+    // RECOGNITION SESSION
+    // ==========================================
+
+    LaunchedEffect(isArMode) {
+        if (isArMode) {
+
+            matchingPredictionCount = 0
+            lastMatchingLabel = ""
+            isCorrect = false
+
+            recognitionManager.startSession()
+
+        } else {
+
+            recognitionManager.stopSession()
+
+            matchingPredictionCount = 0
+            lastMatchingLabel = ""
+            isCorrect = false
+        }
+    }
+
+    DisposableEffect(handLandmarker, recognitionManager) {
+        onDispose {
+            recognitionManager.stopSession()
+            handLandmarker.close()
+            recognitionManager.close()
+        }
+    }
+
+    // ==========================================
     // ROOT CONTAINER
     // ==========================================
 
@@ -215,12 +360,20 @@ fun LessonDetailScreen(
             ArCameraPanel(
                 progress = arProgress,
                 startBounds = videoBoundsInRoot.translate(-containerOrigin),
-
-                // Current camera selection
                 isFrontCamera = isFrontCamera,
+                onSwitchCamera = switchCamera,
 
-                // Switch front/back camera
-                onSwitchCamera = switchCamera
+                onFrame = { imageProxy ->
+                    cameraRotationDegrees =
+                        imageProxy.imageInfo.rotationDegrees
+
+                    handLandmarker.detect(imageProxy)
+                },
+
+                isCorrect = isCorrect,
+
+                handLandmarkPoints = handLandmarkPoints.value,
+                cameraRotationDegrees = cameraRotationDegrees
             )
         }
 
@@ -270,8 +423,8 @@ fun LessonDetailScreen(
             Spacer(Modifier.height(12.dp))
 
             // ==========================================
-            // VIDEO PLACEHOLDER
-            // ==========================================
+// LESSON VIDEO / IMAGE
+// ==========================================
 
             Box(
                 modifier = Modifier
@@ -284,39 +437,14 @@ fun LessonDetailScreen(
                         alpha = 1f - arProgress
                     }
             ) {
-
-                PlaceholderBox(
+                LearningMedia(
+                    category = lesson.category,
+                    item = lesson.signName,
                     modifier = Modifier.fillMaxSize(),
-                    icon = Icons.Filled.Videocam
+                    label = null
                 )
 
-                // Play button
-                RoundActionButton(
-                    icon = Icons.Filled.PlayArrow,
-                    contentDescription = "Play lesson video",
-                    onClick = {
-                        showVideoDialog = true
-                    },
-                    size = 64.dp,
-                    enabled = !isArMode,
-                    modifier = Modifier.align(Alignment.Center)
-                )
-
-                // Video label
-                Text(
-                    text = "Sign video (placeholder)",
-                    color = TextMuted,
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(
-                            bottom = VIDEO_LABEL_BOTTOM_PADDING
-                        )
-                )
-
-                // ==========================================
                 // TRY BUTTON
-                // ==========================================
-
                 PrimaryPillButton(
                     text = "TRY",
                     onClick = openAr,
@@ -346,12 +474,6 @@ fun LessonDetailScreen(
                 )
 
                 Spacer(Modifier.height(4.dp))
-
-                Text(
-                    lesson.description,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = TextMuted
-                )
             }
 
             Spacer(Modifier.height(12.dp))

@@ -9,7 +9,7 @@ plugins {
 android {
     // PURPOSE: Unique package name of the app. Must match the folder structure in app/src/main/java.
     namespace = "com.wikamay.app"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.wikamay.app"
@@ -48,7 +48,7 @@ android {
 
 dependencies {
     // PURPOSE: The BOM keeps all Compose library versions compatible with each other.
-    val composeBom = platform("androidx.compose:compose-bom:2024.06.00")
+    val composeBom = platform("androidx.compose:compose-bom:2025.08.00")
     implementation(composeBom)
 
     implementation("androidx.core:core-ktx:1.13.1")
@@ -74,4 +74,10 @@ dependencies {
     implementation("androidx.camera:camera-lifecycle:$cameraxVersion")
     implementation("androidx.camera:camera-view:$cameraxVersion")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.2")
+
+    // PURPOSE: LiteRT dependency to run the recognition model on-device
+    implementation("com.google.ai.edge.litert:litert:2.1.0")
+
+    // PURPOSE: MediaPipe dependency
+    implementation("com.google.mediapipe:tasks-vision:1.2.2")
 }

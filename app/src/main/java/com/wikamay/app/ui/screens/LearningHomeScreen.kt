@@ -53,9 +53,8 @@ private const val MODULE_TITLE = "FSL Learning Module"
 private const val MODULE_DESCRIPTION =
     "Practice the FSL alphabet and numbers, or follow short tutorial lessons to learn basic signs."
 private const val FINGER_SPELLING_TITLE = "Finger Spelling"
-private const val FINGER_SPELLING_DESCRIPTION = "Practice the FSL finger spelling"
+private const val FINGER_SPELLING_DESCRIPTION = "Start out with the basic alphabet!"
 private const val NUMBERS_TITLE = "Numbers"
-private const val NUMBERS_SUBTITLE = "Practice the FSL number handshapes"
 
 // ==========================================
 // LEARNING CATEGORIES
@@ -68,20 +67,19 @@ private const val NUMBERS_SUBTITLE = "Practice the FSL number handshapes"
 // ==========================================
 private data class LearnCategory(
     val title: String,
-    val subtitle: String,
     @DrawableRes val iconRes: Int? = null
 )
 
 private val LEARN_CATEGORIES = listOf(
-    LearnCategory("Greetings", "Learn FSL signs for greeting people"),
-    LearnCategory("Survival", "Learn FSL signs for urgent needs"),
-    LearnCategory("Calendar", "Learn FSL signs for dates and time"),
-    LearnCategory("Days", "Learn FSL signs for the days of the week"),
-    LearnCategory("Family", "Learn FSL signs for family members"),
-    LearnCategory("Relationships", "Learn FSL signs for relationships"),
-    LearnCategory("Color", "Learn FSL signs for colors"),
-    LearnCategory("Food", "Learn FSL signs for food"),
-    LearnCategory("Drink", "Learn FSL signs for drinks")
+    LearnCategory("Greetings"),
+    LearnCategory("Survival"),
+    LearnCategory("Calendar"),
+    LearnCategory("Days"),
+    LearnCategory("Family"),
+    LearnCategory("Relationships"),
+    LearnCategory("Color"),
+    LearnCategory("Food"),
+    LearnCategory("Drink")
 )
 
 // ==========================================
@@ -264,7 +262,6 @@ fun LearningHomeScreen(
                 // NAVIGATION: Numbers card -> onOpenNumbers (opens the number selection screen). Unchanged.
                 LearnMenuCard(
                     title = NUMBERS_TITLE,
-                    subtitle = NUMBERS_SUBTITLE,
                     onClick = onOpenNumbers,
                     icon = {
                         Icon(
@@ -280,7 +277,6 @@ fun LearningHomeScreen(
                 LEARN_CATEGORIES.forEach { category ->
                     LearnMenuCard(
                         title = category.title,
-                        subtitle = category.subtitle,
                         onClick = { onOpenCategory(category.title) },
                         icon = {
                             // ---- CATEGORY ICON (PNG) ----
@@ -314,7 +310,6 @@ fun LearningHomeScreen(
 @Composable
 private fun LearnMenuCard(
     title: String,
-    subtitle: String,
     onClick: () -> Unit,
     icon: @Composable () -> Unit
 ) {
@@ -330,14 +325,16 @@ private fun LearnMenuCard(
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         // PNG ICON AREA: stays an empty 56.dp space until an icon is supplied.
-        Box(modifier = Modifier.size(56.dp), contentAlignment = Alignment.Center) { icon() }
+        Box(modifier = Modifier.size(56.dp), contentAlignment = Alignment.Center) {
+            icon()
+        }
 
         Column(modifier = Modifier.weight(1f)) {
-            Text(title, fontSize = 22.sp, fontWeight = FontWeight.Bold, color = AccentOrange)
             Text(
-                subtitle,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onBackground
+                text = title,
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold,
+                color = AccentOrange
             )
         }
     }

@@ -125,10 +125,18 @@ fun Placeholder(
  */
 @Composable
 fun ScanFrame(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isCorrect: Boolean = false
 ) {
     Canvas(modifier = modifier) {
         val strokeWidth = 6.dp.toPx()
+
+        val bracketColor = if (isCorrect) {
+            Color.Green
+        } else {
+            ScanBracket
+        }
+
         val half = strokeWidth / 2f
         val arm = size.minDimension * 0.18f
 
@@ -140,7 +148,7 @@ fun ScanFrame(
             dy: Float
         ) {
             drawLine(
-                color = ScanBracket,
+                color = bracketColor,
                 start = Offset(x, y),
                 end = Offset(x + dx * arm, y),
                 strokeWidth = strokeWidth,
@@ -148,7 +156,7 @@ fun ScanFrame(
             )
 
             drawLine(
-                color = ScanBracket,
+                color = bracketColor,
                 start = Offset(x, y),
                 end = Offset(x, y + dy * arm),
                 strokeWidth = strokeWidth,

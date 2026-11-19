@@ -23,7 +23,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.wikamay.app.data.Lesson
 import com.wikamay.app.data.SampleData
@@ -111,13 +110,6 @@ private fun LessonCard(lesson: Lesson, number: Int, onViewLesson: () -> Unit) {
                 color = TextMuted
             )
             Text(lesson.signName, style = MaterialTheme.typography.titleMedium, color = PrimarySlate)
-            Text(
-                text = lesson.description,
-                style = MaterialTheme.typography.bodyMedium,
-                color = TextMuted,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
             Spacer(Modifier.height(8.dp))
             // NAVIGATION: Opens the lesson details screen.
             PrimaryPillButton(text = "View Lesson", onClick = onViewLesson)

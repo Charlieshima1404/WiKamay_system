@@ -15,6 +15,8 @@ import com.wikamay.app.ui.screens.SignToTextScreen
 import com.wikamay.app.ui.screens.SplashScreen
 import com.wikamay.app.ui.screens.TextToSignScreen
 import com.wikamay.app.ui.screens.TutorialsScreen
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 
 /**
  * NAVIGATION: Connects all screens. Each screen receives simple "what to do when X is tapped"
@@ -40,7 +42,14 @@ fun WiKamayNavGraph() {
         navController.popBackStack(Routes.LEARNING_HOME, inclusive = true)
     }
 
-    NavHost(navController = navController, startDestination = Routes.SPLASH) {
+    NavHost(
+        navController = navController,
+        startDestination = Routes.SPLASH,
+        enterTransition = { EnterTransition.None },
+        exitTransition = { ExitTransition.None },
+        popEnterTransition = { EnterTransition.None },
+        popExitTransition = { ExitTransition.None }
+    ) {
 
         // ---- Splash ----
         composable(Routes.SPLASH) {

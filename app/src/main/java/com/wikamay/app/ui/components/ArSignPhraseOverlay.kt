@@ -164,6 +164,8 @@ fun ArCameraPanel(
 @Composable
 fun ArReferencePreview(
     progress: Float,
+    category: String,
+    item: String,
     modifier: Modifier = Modifier
 ) {
     if (progress <= 0f) return
@@ -178,7 +180,9 @@ fun ArReferencePreview(
             ),
         contentAlignment = Alignment.TopEnd
     ) {
-        PlaceholderBox(
+        LearningMedia(
+            category = category,
+            item = item,
             modifier = Modifier
                 .offset {
                     IntOffset(
@@ -190,13 +194,8 @@ fun ArReferencePreview(
                     )
                 }
                 .width(AR_PREVIEW_WIDTH)
-                .aspectRatio(AR_PREVIEW_ASPECT)
-                .pointerInput(Unit) {
-                    detectTapGestures { }
-                },
-            icon = Icons.Filled.Videocam,
-            showCross = false,
-            shape = RoundedCornerShape(8.dp)
+                .aspectRatio(AR_PREVIEW_ASPECT),
+            label = null
         )
     }
 }

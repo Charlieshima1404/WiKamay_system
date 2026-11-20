@@ -423,8 +423,8 @@ fun LessonDetailScreen(
             Spacer(Modifier.height(12.dp))
 
             // ==========================================
-// LESSON VIDEO / IMAGE
-// ==========================================
+            // LESSON VIDEO / IMAGE
+            // ==========================================
 
             Box(
                 modifier = Modifier
@@ -521,7 +521,9 @@ fun LessonDetailScreen(
         // ==========================================
 
         ArReferencePreview(
-            progress = arProgress
+            progress = arProgress,
+            category = lesson.category,
+            item = lesson.signName
         )
     }
 

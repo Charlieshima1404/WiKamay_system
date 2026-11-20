@@ -36,14 +36,22 @@ fun LearningMedia(
 ) {
     val context = LocalContext.current
 
-    // Find the file matching the selected letter or number.
+    // Normalize names to support apostrophes, spaces, and underscores.
+    fun normalizeName(name: String): String {
+        return name
+            .lowercase()
+            .replace(Regex("[^a-z0-9]"), "")
+    }
+
+    // Find the matching tutorial media.
     val assetPath = remember(category, item) {
         val folder = "learning/$category"
+        val normalizedItem = normalizeName(item)
 
         context.assets.list(folder)
             ?.firstOrNull { fileName ->
-                fileName.substringBeforeLast(".")
-                    .equals(item, ignoreCase = true)
+                normalizeName(fileName.substringBeforeLast(".")) ==
+                        normalizedItem
             }
             ?.let { fileName -> "$folder/$fileName" }
     }

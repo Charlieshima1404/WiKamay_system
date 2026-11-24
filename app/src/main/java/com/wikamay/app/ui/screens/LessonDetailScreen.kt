@@ -61,6 +61,7 @@ import com.wikamay.app.ui.components.PrimaryPillButton
 import com.wikamay.app.ui.components.SecondaryPillButton
 import com.wikamay.app.ui.theme.PrimarySlate
 import com.wikamay.app.ui.theme.TextMuted
+import androidx.compose.ui.zIndex
 
 
 // ==========================================
@@ -492,6 +493,7 @@ fun LessonDetailScreen(
     // ==========================================
 
 
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -501,60 +503,9 @@ fun LessonDetailScreen(
             }
     ) {
 
-
         // ==========================================
-        // AR CAMERA PANEL
+        // 1. ORIGINAL LESSON PAGE
         // ==========================================
-
-
-        // CameraX live preview with front/back switching.
-        // Camera switch button is positioned inside ArCameraPanel.
-
-
-        if (arProgress > 0f) {
-
-
-            ArCameraPanel(
-                progress = arProgress,
-
-
-                startBounds = videoBoundsInRoot.translate(
-                    -containerOrigin
-                ),
-
-
-                isFrontCamera = isFrontCamera,
-
-
-                onSwitchCamera = switchCamera,
-
-
-                onFrame = { imageProxy ->
-
-
-                    cameraRotationDegrees =
-                        imageProxy.imageInfo.rotationDegrees
-
-
-                    handLandmarker.detect(imageProxy)
-                },
-
-
-                isCorrect = isCorrect,
-
-
-                handLandmarkPoints = handLandmarkPoints.value,
-
-
-                cameraRotationDegrees = cameraRotationDegrees
-            )
-        }
-
-
-        // ==========================================
-        // ORIGINAL LESSON PAGE
-        // ==========================================
-
 
         Column(
             modifier = Modifier
@@ -566,25 +517,7 @@ fun LessonDetailScreen(
                 )
         ) {
 
-
-            // ==========================================
-            // NAVIGATION
-            // ==========================================
-
-
-            LearningTopBar(
-                onBack = if (isArMode) closeAr else onBack,
-                onReturnToTranslation = onReturnToTranslation
-            )
-
-
             Spacer(Modifier.height(12.dp))
-
-
-            // ==========================================
-            // LESSON TITLE
-            // ==========================================
-
 
             Text(
                 "Lesson ${lessonPosition + 1}",
@@ -596,7 +529,6 @@ fun LessonDetailScreen(
                 )
             )
 
-
             Text(
                 lesson.category,
                 style = MaterialTheme.typography.titleMedium,
@@ -607,14 +539,9 @@ fun LessonDetailScreen(
                 )
             )
 
-
             Spacer(Modifier.height(12.dp))
 
-
-            // ==========================================
             // LESSON VIDEO / IMAGE
-            // ==========================================
-
 
             Box(
                 modifier = Modifier
@@ -628,20 +555,12 @@ fun LessonDetailScreen(
                     }
             ) {
 
-
-                // Tutorial media
-
-
                 LearningMedia(
                     category = lesson.category,
                     item = lesson.signName,
                     modifier = Modifier.fillMaxSize(),
                     label = null
                 )
-
-
-                // TRY BUTTON
-
 
                 PrimaryPillButton(
                     text = "TRY",
@@ -653,14 +572,9 @@ fun LessonDetailScreen(
                 )
             }
 
-
             Spacer(Modifier.height(12.dp))
 
-
-            // ==========================================
             // SIGN NAME AND DESCRIPTION
-            // ==========================================
-
 
             Column(
                 modifier = Modifier
@@ -668,90 +582,99 @@ fun LessonDetailScreen(
                     .verticalScroll(rememberScrollState())
             ) {
 
-
                 Text(
                     lesson.signName,
                     style = MaterialTheme.typography.titleLarge,
                     color = PrimarySlate
                 )
 
-
                 Spacer(Modifier.height(4.dp))
             }
 
-
             Spacer(Modifier.height(12.dp))
 
-
-            // ==========================================
             // PREVIOUS / NEXT LESSON
-            // ==========================================
-
 
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .alpha(arBottomAlpha),
-
-
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
 
-
-                // Previous lesson
-
-
                 SecondaryPillButton(
                     text = "Previous lesson",
-
-
                     onClick = {
                         if (lessonPosition > 0) {
                             lessonPosition--
                         }
                     },
-
-
                     enabled = lessonPosition > 0 && !isArMode
                 )
 
-
-                // Next lesson
-
-
                 PrimaryPillButton(
                     text = "Next lesson",
-
-
                     onClick = {
                         if (lessonPosition < categoryLessons.lastIndex) {
                             lessonPosition++
                         }
                     },
-
-
-                    enabled =
-                        lessonPosition < categoryLessons.lastIndex &&
-                                !isArMode
+                    enabled = lessonPosition < categoryLessons.lastIndex &&
+                            !isArMode
                 )
             }
-
 
             Spacer(Modifier.height(8.dp))
         }
 
 
         // ==========================================
-        // AR REFERENCE PREVIEW
-        // ==========================================
+// 2. AR CAMERA PANEL
+// ==========================================
 
+        if (arProgress > 0f) {
+            ArCameraPanel(
+                progress = arProgress,
+                startBounds = videoBoundsInRoot.translate(-containerOrigin),
+                isFrontCamera = isFrontCamera,
+                onSwitchCamera = switchCamera,
+                onFrame = { imageProxy ->
+                    cameraRotationDegrees =
+                        imageProxy.imageInfo.rotationDegrees
+
+                    handLandmarker.detect(imageProxy)
+                },
+                isCorrect = isCorrect,
+                handLandmarkPoints = handLandmarkPoints.value,
+                cameraRotationDegrees = cameraRotationDegrees
+            )
+        }
+
+// ==========================================
+// 3. AR REFERENCE PREVIEW
+// ==========================================
 
         ArReferencePreview(
             progress = arProgress,
             category = lesson.category,
-            item = lesson.signName
+            item = lesson.signName,
+            modifier = Modifier.zIndex(2f)
         )
+
+// ==========================================
+// 4. TOP NAVIGATION
+// ==========================================
+
+        Box(
+            modifier = Modifier.zIndex(3f)
+        ) {
+            LearningTopBar(
+                onBack = if (isArMode) closeAr else onBack,
+                onReturnToTranslation = onReturnToTranslation
+            )
+        }
     }
+
 
 
     // ==========================================

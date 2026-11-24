@@ -2,7 +2,12 @@ package com.wikamay.app.ui.components
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.widget.VideoView
+import android.net.Uri
+import android.view.LayoutInflater
+import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.ui.PlayerView
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -26,6 +31,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
+import androidx.compose.foundation.clickable
+import com.wikamay.app.R
 
 @Composable
 fun LearningMedia(
@@ -124,24 +131,48 @@ fun LearningMedia(
             }
 
             videoPath != null -> {
-                val videoView = remember(videoPath) {
-                    VideoView(context).apply {
-                        setVideoPath(videoPath!!)
-                        setOnPreparedListener { player ->
-                            player.isLooping = true
-                            player.start()
-                        }
+                val player = remember(videoPath) {
+                    ExoPlayer.Builder(context).build().apply {
+                        setMediaItem(
+                            MediaItem.fromUri(
+                                Uri.fromFile(File(videoPath!!))
+                            )
+                        )
+
+                        repeatMode = Player.REPEAT_MODE_ONE
+                        prepare()
+                        playWhenReady = true
                     }
                 }
 
                 AndroidView(
-                    factory = { videoView },
-                    modifier = Modifier.fillMaxSize()
+                    factory = { viewContext ->
+                        LayoutInflater.from(viewContext)
+                            .inflate(
+                                R.layout.learning_video_layout,
+                                null,
+                                false
+                            ) as PlayerView
+                    },
+                    update = { playerView ->
+                        playerView.player = player
+                        playerView.isClickable = false
+                        playerView.isFocusable = false
+                        playerView.isFocusableInTouchMode = false
+                    },
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clickable(
+                            interactionSource = remember {
+                                androidx.compose.foundation.interaction.MutableInteractionSource()
+                            },
+                            indication = null
+                        ) {}
                 )
 
-                DisposableEffect(videoView) {
+                DisposableEffect(player) {
                     onDispose {
-                        videoView.stopPlayback()
+                        player.release()
                     }
                 }
             }

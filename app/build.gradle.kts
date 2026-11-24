@@ -80,4 +80,8 @@ dependencies {
 
     // PURPOSE: MediaPipe dependency
     implementation("com.google.mediapipe:tasks-vision:1.2.2")
+
+    // PURPOSE: Video lessons
+    implementation("androidx.media3:media3-exoplayer:1.6.1")
+    implementation("androidx.media3:media3-ui:1.6.1")
 }

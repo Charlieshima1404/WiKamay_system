@@ -59,12 +59,7 @@ object SampleData {
             "WRONG",
             "CORRECT",
             "SLOW",
-            "FAST",
-            "DEAF",
-            "HARD OF HEARING",
-            "WHEELCHAIR PERSON",
-            "BLIND",
-            "DEAF BLIND"
+            "FAST"
         ),
 
         "Calendar" to listOf(
@@ -113,7 +108,12 @@ object SampleData {
             "GIRL",
             "MAN",
             "WOMAN",
-            "MARRIED"
+            "MARRIED",
+            "DEAF",
+            "HARD OF HEARING",
+            "WHEELCHAIR PERSON",
+            "BLIND",
+            "DEAF BLIND"
         ),
 
         "Color" to listOf(

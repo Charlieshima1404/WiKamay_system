@@ -1,5 +1,5 @@
-
 package com.wikamay.app.ui.components
+
 
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
@@ -30,14 +30,17 @@ import androidx.camera.core.ImageProxy
 import androidx.compose.ui.geometry.Offset
 import com.wikamay.app.ui.components.HandOverlay
 
+
 // ==========================================
 // AR INTERFACE DESIGN
 // ==========================================
+
 
 private val AR_PREVIEW_WIDTH = 100.dp
 private const val AR_PREVIEW_ASPECT = 3f / 4f
 private val AR_SCAN_FRAME_MARGIN = 12.dp
 private val AR_PANEL_START_CORNER = 12.dp
+
 
 // Animation blend
 private fun mix(
@@ -48,9 +51,11 @@ private fun mix(
     return start + (stop - start) * progress
 }
 
+
 // ==========================================
 // AR CAMERA PANEL
 // ==========================================
+
 
 @Composable
 fun ArCameraPanel(
@@ -70,23 +75,28 @@ fun ArCameraPanel(
         val density = LocalDensity.current
         val containerWidthPx = constraints.maxWidth.toFloat()
 
+
         // Animated panel boundaries
         val left = mix(startBounds.left, 0f, progress)
         val top = mix(startBounds.top, 0f, progress)
         val right = mix(startBounds.right, containerWidthPx, progress)
         val bottom = startBounds.bottom
 
+
         val panelWidth = with(density) {
             (right - left).coerceAtLeast(0f).toDp()
         }
+
 
         val panelHeight = with(density) {
             (bottom - top).coerceAtLeast(0f).toDp()
         }
 
+
         // ==========================================
         // LIVE CAMERAX PREVIEW + CAMERA SWITCH
         // ==========================================
+
 
         Box(
             modifier = Modifier
@@ -101,6 +111,7 @@ fun ArCameraPanel(
                     height = panelHeight
                 )
         ) {
+
 
             // CAMERA PREVIEW
             CameraXPreview(
@@ -121,6 +132,7 @@ fun ArCameraPanel(
                 )
             }
 
+
             // CAMERA SWITCH BUTTON - CENTER
             if (progress > 0.9f) {
                 SquareIconButton(
@@ -134,9 +146,11 @@ fun ArCameraPanel(
             }
         }
 
+
         // ==========================================
         // SCAN FRAME
         // ==========================================
+
 
         ScanFrame(
             modifier = Modifier
@@ -157,9 +171,11 @@ fun ArCameraPanel(
     }
 }
 
+
 // ==========================================
 // AR REFERENCE PREVIEW
 // ==========================================
+
 
 @Composable
 fun ArReferencePreview(
@@ -169,6 +185,7 @@ fun ArReferencePreview(
     modifier: Modifier = Modifier
 ) {
     if (progress <= 0f) return
+
 
     Box(
         modifier = modifier
@@ -199,3 +216,4 @@ fun ArReferencePreview(
         )
     }
 }
+

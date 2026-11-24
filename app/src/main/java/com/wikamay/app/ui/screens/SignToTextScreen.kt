@@ -46,7 +46,6 @@ import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
 import com.wikamay.app.ui.components.CameraXPreview
@@ -65,9 +64,6 @@ import com.wikamay.app.ml.HandLandmark
 import com.wikamay.app.ml.HandLandmarkPreprocessor
 import com.wikamay.app.ml.Sequence
 import com.wikamay.app.ml.EnglishSentenceBuilder
-
-private const val SCAN_HINT =
-    "Place your hands inside the frame"
 
 private const val EMPTY_RESULT_TEXT =
     "Your sign translation will appear here."
@@ -156,10 +152,6 @@ fun SignToTextScreen(
     // RECOGNITION STATES
     // ==========================================
 
-    val detectionMessage = remember {
-        mutableStateOf(SCAN_HINT)
-    }
-
     val recognizedText = remember {
         mutableStateOf(EMPTY_RESULT_TEXT)
     }
@@ -200,8 +192,6 @@ fun SignToTextScreen(
             },
 
             onError = { error ->
-                detectionMessage.value =
-                    "Recognition error: $error"
             }
         )
     }
@@ -242,8 +232,6 @@ fun SignToTextScreen(
             },
 
             onError = { error ->
-                detectionMessage.value =
-                    "Hand detection error: $error"
             }
         )
     }
@@ -293,8 +281,6 @@ fun SignToTextScreen(
 
                 } catch (exception: Exception) {
 
-                    detectionMessage.value =
-                        "Frame processing error: ${exception.localizedMessage}"
                 }
             }
 
@@ -467,28 +453,6 @@ fun SignToTextScreen(
                                     Modifier.size(28.dp)
                             )
                         }
-
-                        // ==========================================
-                        // CAMERA INSTRUCTION
-                        // ==========================================
-
-                        Text(
-                            text = detectionMessage.value,
-                            color = Color.White,
-                            style =
-                                MaterialTheme.typography.bodyLarge,
-                            textAlign = TextAlign.Center,
-
-                            modifier = Modifier
-                                .align(Alignment.Center)
-                                .background(
-                                    Color.Black.copy(
-                                        alpha = 0.55f
-                                    ),
-                                    RoundedCornerShape(8.dp)
-                                )
-                                .padding(10.dp)
-                        )
                     }
 
                     // ==========================================
@@ -519,8 +483,6 @@ fun SignToTextScreen(
                                 recognitionManager.stopSession()
                                 isRecognizing = false
 
-                                detectionMessage.value =
-                                    SCAN_HINT
 
                             } else {
 
@@ -531,8 +493,6 @@ fun SignToTextScreen(
                                 recognizedText.value =
                                     EMPTY_RESULT_TEXT
 
-                                detectionMessage.value =
-                                    SCAN_HINT
 
                                 // START RECOGNITION
 

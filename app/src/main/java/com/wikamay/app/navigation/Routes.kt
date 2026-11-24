@@ -6,12 +6,16 @@ package com.wikamay.app.navigation
  */
 object Routes {
     const val SPLASH = "splash"
+    const val ONBOARDING = "onboarding"
+    const val MAIN_MENU = "main_menu"
     const val TEXT_TO_SIGN = "text_to_sign"
     const val SIGN_TO_TEXT = "sign_to_text"
     const val LEARNING_HOME = "learning_home"
     const val ALPHABET = "alphabet"
     const val NUMBERS = "numbers"
     const val TUTORIALS = "tutorials"
+    // PURPOSE: FSL Phrases screen (grid of phrase categories).
+    const val PHRASE_CATEGORIES = "phrase_categories"
 
     // PURPOSE: Lesson list of ONE category (Greetings, Survival, ...): {category} is the category name.
     const val CATEGORY = "category/{category}"

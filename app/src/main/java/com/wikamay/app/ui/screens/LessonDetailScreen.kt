@@ -1,5 +1,4 @@
-
-package com.wikamay.app.ui.screens
+package com.wikamay.app.ui.screens //ito yung inside ng FSL WORDS YUNG AY CAMERA//
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.FastOutSlowInEasing

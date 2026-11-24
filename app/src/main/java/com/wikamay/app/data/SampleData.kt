@@ -1,3 +1,4 @@
+
 package com.wikamay.app.data
 
 /**
@@ -5,8 +6,8 @@ package com.wikamay.app.data
  */
 data class Lesson(
     val id: Int,              // PURPOSE: Unique number of the lesson (1, 2, 3, ...).
-    val category: String,     // PURPOSE: Group the lesson belongs to (e.g. "Greetings").
-    val signName: String,     // PURPOSE: Name of the sign shown as the lesson title.
+    val category: String,      // PURPOSE: Group the lesson belongs to (e.g. "Greetings").
+    val signName: String,      // PURPOSE: Name of the sign shown as the lesson title.
 )
 
 /**
@@ -34,6 +35,7 @@ object SampleData {
 
     // Tutorial vocabulary grouped using the existing Learning Home categories.
     private val lessonGroups = listOf(
+
         "Greetings" to listOf(
             "GOOD MORNING",
             "GOOD AFTERNOON",
@@ -49,9 +51,9 @@ object SampleData {
 
         "Survival" to listOf(
             "UNDERSTAND",
-            "DON’T UNDERSTAND",
+            "DON'T UNDERSTAND",
             "KNOW",
-            "DON’T KNOW",
+            "DON'T KNOW",
             "NO",
             "YES",
             "WRONG",
@@ -60,7 +62,7 @@ object SampleData {
             "FAST",
             "DEAF",
             "HARD OF HEARING",
-            "WEELCHAIR PERSON",
+            "WHEELCHAIR PERSON",
             "BLIND",
             "DEAF BLIND"
         ),
@@ -77,7 +79,7 @@ object SampleData {
             "SEPTEMBER",
             "OCTOBER",
             "NOVEMBER",
-            "DECEMBER",
+            "DECEMBER"
         ),
 
         "Days" to listOf(
@@ -166,7 +168,7 @@ object SampleData {
             Lesson(
                 id = index + 1,
                 category = category,
-                signName = signName,
+                signName = signName
             )
         }
 }

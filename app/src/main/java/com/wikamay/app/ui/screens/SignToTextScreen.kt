@@ -3,6 +3,7 @@ package com.wikamay.app.ui.screens
 
 import androidx.camera.core.CameraSelector
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,20 +14,22 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.Canvas
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Cameraswitch
+import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.VolumeUp
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -34,13 +37,14 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.platform.LocalContext
 
 import com.wikamay.app.ui.components.CameraXPreview
 import com.wikamay.app.ui.components.ModeToggle
@@ -49,14 +53,8 @@ import com.wikamay.app.ui.components.RoundActionButton
 import com.wikamay.app.ui.components.ScanFrame
 import com.wikamay.app.ui.components.SquareIconButton
 import com.wikamay.app.ui.components.TranslationMode
-import com.wikamay.app.ui.components.HandOverlay
 import com.wikamay.app.ui.theme.PanelGray
 import com.wikamay.app.ui.theme.TextDark
-
-import com.wikamay.app.ml.HandLandmark
-import com.wikamay.app.ml.HandLandmarkPreprocessor
-import com.wikamay.app.ml.Sequence
-import com.wikamay.app.ml.EnglishSentenceBuilder
 
 private const val SCAN_HINT =
     "Place your hands inside the frame"
@@ -64,141 +62,91 @@ private const val SCAN_HINT =
 private const val EMPTY_RESULT_TEXT =
     "Your sign translation will appear here."
 
-private const val HAND_SCALE = 1.2f
-
+/**
+ * PURPOSE:
+ * Sign -> Text translation screen.
+ *
+ * FEATURES:
+ * - Live camera preview
+ * - Camera switching
+ * - Learning shortcut
+ * - Sign scanning frame
+ * - Scan button
+ * - Translation result panel
+ * - Text-to-speech placeholder
+ * - Guided tutorial
+ * - Help button to replay the tutorial
+ */
 @Composable
 fun SignToTextScreen(
     onSwitchToTextToSign: () -> Unit,
-    onOpenLearningMenu: () -> Unit
+    onOpenLearningMenu: () -> Unit,
+
+    // Initial / externally controlled tutorial visibility
+    showTutorial: Boolean = false,
+    onTutorialFinished: () -> Unit = {},
+    onTutorialDismissed: () -> Unit = onTutorialFinished
 ) {
 
-    // PURPOSE: MediaPipe detector
-    val context = LocalContext.current
+    // ==========================================
+    // TUTORIAL ELEMENT POSITIONS
+    // ==========================================
 
-    val detectionMessage = remember {
-        mutableStateOf(SCAN_HINT)
+    var scanAreaBounds by remember { mutableStateOf<Rect?>(null) }
+    var scanButtonBounds by remember { mutableStateOf<Rect?>(null) }
+    var resultBounds by remember { mutableStateOf<Rect?>(null) }
+    var cameraSwitchBounds by remember { mutableStateOf<Rect?>(null) }
+
+    // ==========================================
+    // TUTORIAL VISIBILITY
+    // Allows the Help button to replay the tutorial.
+    // ==========================================
+
+    var tutorialVisible by rememberSaveable {
+        mutableStateOf(showTutorial)
     }
 
-    val recognizedText = remember {
-        mutableStateOf(EMPTY_RESULT_TEXT)
+    // Synchronize with navigation-controlled tutorial visibility.
+    LaunchedEffect(showTutorial) {
+        tutorialVisible = showTutorial
     }
 
-    var isRecognizing by rememberSaveable {
-        mutableStateOf(false)
-    }
+    // ==========================================
+    // CAMERA SELECTION
+    // ==========================================
 
-    val sentenceBuilder = remember {
-        EnglishSentenceBuilder()
-    }
-
-    val handLandmarkPoints = remember {
-        mutableStateOf<List<List<Offset>>>(emptyList())
-    }
-
-    val recognitionManager = remember(context) {
-        Sequence(
-            context = context,
-
-            onUpdate = { update ->
-
-                val prediction = update.selectedPrediction
-
-                if (prediction != null) {
-                    sentenceBuilder.accept(prediction)?.let { sentence ->
-                        recognizedText.value = sentence
-                    }
-                }
-            },
-
-            onError = { error ->
-                detectionMessage.value =
-                    "Recognition error: $error"
-            }
-        )
-    }
-
-    DisposableEffect(recognitionManager) {
-        onDispose {
-            recognitionManager.close()
-        }
-    }
-
-    val handLandmarker = remember(context) {
-        HandLandmark(
-            context = context,
-
-            onResult = { result ->
-                val extracted =
-                    HandLandmarkPreprocessor.extract(result)
-
-                handLandmarkPoints.value = result.landmarks().map { hand ->
-                    hand.map { landmark ->
-                        Offset(
-                            x = landmark.x(),
-                            y = landmark.y()
-                        )
-                    }
-                }
-
-                recognitionManager.processFrame(extracted)
-            },
-
-            onError = { error ->
-                detectionMessage.value =
-                    "Hand detection error: $error"
-            }
-        )
-    }
-
-    DisposableEffect(handLandmarker) {
-        onDispose {
-            handLandmarker.close()
-        }
-    }
-
-    // Camera selection
     var isFrontCamera by rememberSaveable {
         mutableStateOf(true)
     }
 
-    var cameraRotationDegrees by remember {
-        mutableStateOf(270)
+    // ==========================================
+    // DIALOG VISIBILITY
+    // ==========================================
+
+    var showScanDialog by remember {
+        mutableStateOf(false)
     }
 
     var showSpeechDialog by remember {
         mutableStateOf(false)
     }
 
-    // CameraX live preview
-    CameraXPreview(
-        modifier = Modifier.fillMaxSize(),
-        shape = RoundedCornerShape(0.dp),
-        lensFacing = if (isFrontCamera) {
-            CameraSelector.LENS_FACING_FRONT
-        } else {
-            CameraSelector.LENS_FACING_BACK
-        },
-        onFrame = { imageProxy ->
-            try {
-                cameraRotationDegrees = imageProxy.imageInfo.rotationDegrees
+    // ==========================================
+    // MAIN CAMERA SCREEN
+    // ==========================================
 
-                handLandmarker.detect(imageProxy)
-            } catch (exception: Exception) {
-                detectionMessage.value =
-                    "Frame processing error: ${exception.localizedMessage}"
+    Box(modifier = Modifier.fillMaxSize()) {
+
+        // CAMERA PREVIEW
+        CameraXPreview(
+            modifier = Modifier.fillMaxSize(),
+            shape = RoundedCornerShape(0.dp),
+            lensFacing = if (isFrontCamera) {
+                CameraSelector.LENS_FACING_FRONT
+            } else {
+                CameraSelector.LENS_FACING_BACK
             }
-        }
-    ) {
-        Box(
-            modifier = Modifier.fillMaxSize()
         ) {
-
-            HandOverlay(
-                handLandmarkPoints = handLandmarkPoints.value,
-                cameraRotationDegrees = cameraRotationDegrees,
-                isFrontCamera = isFrontCamera,
-                modifier = Modifier.fillMaxSize()
-            )
 
             Column(
                 modifier = Modifier
@@ -210,19 +158,26 @@ fun SignToTextScreen(
                     )
             ) {
 
+                // ==========================================
                 // TOP ROW
+                // Camera switch and Learning shortcut
+                // ==========================================
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
 
-                    // CAMERA SWITCH ICON BUTTON
+                    // CAMERA SWITCH BUTTON
                     SquareIconButton(
                         icon = Icons.Filled.Cameraswitch,
                         contentDescription = "Switch camera",
                         onClick = {
                             isFrontCamera = !isFrontCamera
+                        },
+                        modifier = Modifier.onGloballyPositioned {
+                            cameraSwitchBounds = it.boundsInRoot()
                         }
                     )
 
@@ -240,7 +195,10 @@ fun SignToTextScreen(
                     modifier = Modifier.height(4.dp)
                 )
 
-                // TRANSLATION MODE
+                // ==========================================
+                // TRANSLATION MODE TOGGLE
+                // ==========================================
+
                 ModeToggle(
                     selected = TranslationMode.SIGN_TO_TEXT,
                     onModeSelected = { mode ->
@@ -253,7 +211,10 @@ fun SignToTextScreen(
                         .width(280.dp)
                 )
 
+                // ==========================================
                 // LIVE CAMERA SCANNING AREA
+                // ==========================================
+
                 Box(
                     modifier = Modifier
                         .weight(1f)
@@ -262,53 +223,97 @@ fun SignToTextScreen(
                             horizontal = 24.dp,
                             vertical = 24.dp
                         )
+                        .onGloballyPositioned {
+                            scanAreaBounds = it.boundsInRoot()
+                        }
                 ) {
+
                     // SCANNING BRACKETS
                     ScanFrame(
                         modifier = Modifier.fillMaxSize()
                     )
+
+                    // ==========================================
+                    // HELP BUTTON
+                    // EDIT HERE: Placement, size, and background.
+                    // ==========================================
+
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopStart)
+                            .padding(8.dp)
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(
+                                Color.Black.copy(alpha = 0.40f)
+                            )
+                            .clickable {
+                                tutorialVisible = true
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+
+                        Icon(
+                            imageVector = Icons.Filled.HelpOutline,
+                            contentDescription = "Replay Sign-to-Text tutorial",
+                            tint = Color.White,
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
+
+                    // ==========================================
+                    // CAMERA INSTRUCTION
+                    // ==========================================
+
+                    Text(
+                        text = SCAN_HINT,
+                        color = Color.White,
+                        style = MaterialTheme.typography.bodyLarge,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .background(
+                                Color.Black.copy(alpha = 0.55f),
+                                RoundedCornerShape(8.dp)
+                            )
+                            .padding(10.dp)
+                    )
                 }
 
+                // ==========================================
                 // CAMERA SCAN BUTTON
-                RoundActionButton(
-                    icon = if (isRecognizing) {
-                        Icons.Filled.Stop
-                    } else {
-                        Icons.Filled.CameraAlt
-                    },
-                    contentDescription = if (isRecognizing) {
-                        "End recognition"
-                    } else {
-                        "Start recognition"
-                    },
-                    onClick = {
-                        if (isRecognizing) {
-                            recognitionManager.stopSession()
-                            isRecognizing = false
-                        } else {
-                            sentenceBuilder.reset()
-                            recognizedText.value = EMPTY_RESULT_TEXT
+                // ==========================================
 
-                            recognitionManager.startSession()
-                            isRecognizing = true
-                        }
+                RoundActionButton(
+                    icon = Icons.Filled.CameraAlt,
+                    contentDescription = "Scan sign using camera",
+                    onClick = {
+                        showScanDialog = true
                     },
                     size = 64.dp,
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                    modifier = Modifier
+                        .align(Alignment.CenterHorizontally)
+                        .onGloballyPositioned {
+                            scanButtonBounds = it.boundsInRoot()
+                        }
                 )
 
                 Spacer(
                     modifier = Modifier.height(12.dp)
                 )
 
+                // ==========================================
                 // TRANSLATION RESULT PANEL
+                // ==========================================
+
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .heightIn(min = 80.dp)
-                        .clip(
-                            RoundedCornerShape(16.dp)
-                        )
+                        .onGloballyPositioned {
+                            resultBounds = it.boundsInRoot()
+                        }
+                        .clip(RoundedCornerShape(16.dp))
                         .background(PanelGray)
                         .padding(16.dp),
 
@@ -316,14 +321,14 @@ fun SignToTextScreen(
                 ) {
 
                     Text(
-                        text = recognizedText.value,
+                        text = EMPTY_RESULT_TEXT,
                         color = TextDark,
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Normal,
                         modifier = Modifier.weight(1f)
                     )
 
-                    // TEXT TO SPEECH
+                    // TEXT TO SPEECH BUTTON
                     RoundActionButton(
                         icon = Icons.Filled.VolumeUp,
                         contentDescription = "Read translation aloud",
@@ -336,19 +341,58 @@ fun SignToTextScreen(
             }
         }
 
+        // ==========================================
+        // SIGN -> TEXT TUTORIAL OVERLAY
+        // ==========================================
 
-        // TEXT TO SPEECH INFORMATION
-        if (showSpeechDialog) {
+        if (tutorialVisible) {
 
-            PlaceholderDialog(
-                title = "Text-to-speech",
-                message = "Text-to-speech will be connected after the sign recognition system is implemented.",
+            SignToTextTutorial(
+                scanAreaBounds = scanAreaBounds,
+                scanButtonBounds = scanButtonBounds,
+                resultBounds = resultBounds,
+                cameraSwitchBounds = cameraSwitchBounds,
+
+                onFinish = {
+                    tutorialVisible = false
+                    onTutorialFinished()
+                },
+
                 onDismiss = {
-                    showSpeechDialog = false
+                    tutorialVisible = false
+                    onTutorialDismissed()
                 }
             )
         }
     }
+
+    // ==========================================
+    // CAMERA SCAN INFORMATION DIALOG
+    // ==========================================
+
+    if (showScanDialog) {
+
+        PlaceholderDialog(
+            title = "FSL Recognition",
+            message = "Your live camera preview is available. Automatic Filipino Sign Language recognition still needs to be connected to a hand detection and recognition model.",
+            onDismiss = {
+                showScanDialog = false
+            }
+        )
+    }
+
+    // ==========================================
+    // TEXT TO SPEECH INFORMATION DIALOG
+    // ==========================================
+
+    if (showSpeechDialog) {
+
+        PlaceholderDialog(
+            title = "Text-to-speech",
+            message = "Text-to-speech will be connected after the sign recognition system is implemented.",
+            onDismiss = {
+                showSpeechDialog = false
+            }
+        )
+    }
 }
-
-

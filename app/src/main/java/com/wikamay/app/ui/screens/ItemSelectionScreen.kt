@@ -1,4 +1,4 @@
-package com.wikamay.app.ui.screens
+package com.wikamay.app.ui.screens //SELECTION THE LETTERS AND NUMBERS//
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -58,84 +58,122 @@ fun ItemSelectionScreen(
     items: List<String>,
     onItemSelected: (Int) -> Unit,
     onBack: () -> Unit,
-    onReturnToTranslation: () -> Unit
+    onReturnToTranslation: () -> Unit,
+    // ===== TUTORIAL NAVIGATION AND STEPS: TUTORIAL INPUTS =====
+    // Only used to show the walkthrough on top of this screen. Default = no tutorial.
+    showTutorial: Boolean = false,
+    onTutorialFinished: () -> Unit = {},
+    onTutorialDismissed: () -> Unit = onTutorialFinished
 ) {
+    // Remembers where the letter tile, dots and top bar are (only used by the tutorial highlight).
+    val tutorialTargets = rememberTutorialTargets()
+
     // PURPOSE: Number of pages needed to show all items (rounded up).
     val pageCount = (items.size + ITEMS_PER_PAGE - 1) / ITEMS_PER_PAGE
     val pagerState = rememberPagerState(pageCount = { pageCount })
     val scope = rememberCoroutineScope()
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .systemBarsPadding()
-            .padding(horizontal = 20.dp, vertical = 12.dp)
-    ) {
-        LearningTopBar(onBack = onBack, onReturnToTranslation = onReturnToTranslation)
-        Spacer(Modifier.height(16.dp))
+    // Box added only so the tutorial overlay can be drawn on top of the screen.
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+                .systemBarsPadding()
+                .padding(horizontal = 20.dp, vertical = 12.dp)
+        ) {
+            LearningTopBar(
+                onBack = onBack,
+                onReturnToTranslation = onReturnToTranslation,
+                // Tutorial: highlight target (Back and translate buttons)
+                modifier = Modifier.tutorialTarget(tutorialTargets, TutorialKeys.ALPHABET_TOP_BAR)
+            )
+            Spacer(Modifier.height(16.dp))
 
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleLarge,
-            color = PrimarySlate,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth()
-        )
-        Text(
-            text = "Swipe or tap the dots for more",
-            style = MaterialTheme.typography.bodyMedium,
-            color = TextMuted,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth()
-        )
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleLarge,
+                color = PrimarySlate,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Text(
+                text = "Swipe or tap the dots for more",
+                style = MaterialTheme.typography.bodyMedium,
+                color = TextMuted,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
 
-        // ---- Pages of tiles ----
-        HorizontalPager(state = pagerState, modifier = Modifier.weight(1f)) { page ->
-            val firstIndexOnPage = page * ITEMS_PER_PAGE
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                for (row in 0 until ROWS) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        for (column in 0 until COLUMNS) {
-                            val index = firstIndexOnPage + row * COLUMNS + column
-                            if (index < items.size) {
-                                SelectionTile(label = items[index], onClick = { onItemSelected(index) })
-                            } else {
-                                // Keeps the grid aligned when the last page has fewer items.
-                                Spacer(Modifier.size(TILE_SIZE))
+            // ---- Pages of tiles ----
+            HorizontalPager(state = pagerState, modifier = Modifier.weight(1f)) { page ->
+                val firstIndexOnPage = page * ITEMS_PER_PAGE
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    for (row in 0 until ROWS) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                            for (column in 0 until COLUMNS) {
+                                val index = firstIndexOnPage + row * COLUMNS + column
+                                if (index < items.size) {
+                                    SelectionTile(
+                                        label = items[index],
+                                        onClick = { onItemSelected(index) },
+                                        // Tutorial: highlight target = the first tile
+                                        modifier = if (index == 0) {
+                                            Modifier.tutorialTarget(tutorialTargets, TutorialKeys.ALPHABET_FIRST_TILE)
+                                        } else {
+                                            Modifier
+                                        }
+                                    )
+                                } else {
+                                    // Keeps the grid aligned when the last page has fewer items.
+                                    Spacer(Modifier.size(TILE_SIZE))
+                                }
                             }
                         }
+                        Spacer(Modifier.height(16.dp))
                     }
-                    Spacer(Modifier.height(16.dp))
                 }
             }
+
+            // ---- Page dots ----
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .tutorialTarget(tutorialTargets, TutorialKeys.ALPHABET_DOTS), // Tutorial: highlight target
+                horizontalArrangement = Arrangement.Center
+            ) {
+                repeat(pageCount) { pageNumber ->
+                    val isCurrent = pageNumber == pagerState.currentPage
+                    Box(
+                        modifier = Modifier
+                            .padding(6.dp)
+                            .size(14.dp)
+                            .clip(CircleShape)
+                            .background(if (isCurrent) PrimarySlate else Color.White)
+                            .border(2.dp, PrimarySlate, CircleShape)
+                            // FUNCTION: Tapping a dot scrolls to that page.
+                            .clickable { scope.launch { pagerState.animateScrollToPage(pageNumber) } }
+                    )
+                }
+            }
+            Spacer(Modifier.height(8.dp))
         }
 
-        // ---- Page dots ----
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center
-        ) {
-            repeat(pageCount) { pageNumber ->
-                val isCurrent = pageNumber == pagerState.currentPage
-                Box(
-                    modifier = Modifier
-                        .padding(6.dp)
-                        .size(14.dp)
-                        .clip(CircleShape)
-                        .background(if (isCurrent) PrimarySlate else Color.White)
-                        .border(2.dp, PrimarySlate, CircleShape)
-                        // FUNCTION: Tapping a dot scrolls to that page.
-                        .clickable { scope.launch { pagerState.animateScrollToPage(pageNumber) } }
-                )
-            }
+        // ===== TUTORIAL NAVIGATION AND STEPS: ALPHABET WALKTHROUGH =====
+        // Drawn on top of the screen only while showTutorial is true (the NavGraph turns it on for the
+        // FSL Alphabet only, not for Numbers). Text and steps: ui/screens/LearningModuleTutorials.kt.
+        if (showTutorial) {
+            AlphabetSelectionTutorial(
+                targets = tutorialTargets,
+                onFinish = onTutorialFinished,
+                onDismiss = onTutorialDismissed
+            )
         }
-        Spacer(Modifier.height(8.dp))
-    }
+    } // end of the Box added for the tutorial overlay
 }
 
 // EDITABLE: Size of each letter/number tile.
@@ -143,9 +181,9 @@ private val TILE_SIZE = 110.dp
 
 /** PURPOSE: One dark rounded tile showing a letter or number. Tapping it selects the item. */
 @Composable
-private fun SelectionTile(label: String, onClick: () -> Unit) {
+private fun SelectionTile(label: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
     Box(
-        modifier = Modifier
+        modifier = modifier
             .size(TILE_SIZE)
             .clip(RoundedCornerShape(16.dp))
             .background(PrimarySlate)

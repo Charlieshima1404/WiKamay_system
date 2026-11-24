@@ -1,4 +1,4 @@
-package com.wikamay.app.ui.screens
+package com.wikamay.app.ui.screens //INSIDE THE ALPHABET/NUMBERS YUNG MAY AR//
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement

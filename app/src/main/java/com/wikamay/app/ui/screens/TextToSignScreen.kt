@@ -39,11 +39,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+
 import com.wikamay.app.ui.components.ModeToggle
 import com.wikamay.app.ui.components.PlaceholderBox
 import com.wikamay.app.ui.components.PlaceholderDialog
@@ -55,43 +56,96 @@ import com.wikamay.app.ui.theme.PrimarySlate
 import com.wikamay.app.ui.theme.TextDark
 import com.wikamay.app.ui.theme.TextMuted
 import com.wikamay.app.ui.theme.ToggleTrack
+
 import java.util.Locale
 
-// EDITABLE: Texts used on this screen.
+// ==========================================
+// EDITABLE SCREEN TEXT
+// ==========================================
+
 private const val INPUT_HINT = "Type a word or phrase..."
 private const val AVATAR_LABEL = "Virtual signing avatar\n(placeholder)"
+
+// ==========================================
+// TEXT-TO-SIGN SCREEN
+// ==========================================
 
 @Composable
 fun TextToSignScreen(
     onSwitchToSignToText: () -> Unit,
     onOpenLearningMenu: () -> Unit,
+
+    // Tutorial visibility controlled externally
     showTutorial: Boolean = false,
     onTutorialFinished: () -> Unit = {},
     onTutorialDismissed: () -> Unit = onTutorialFinished
 ) {
-    // Tutorial element positions
-    var avatarBounds by remember { mutableStateOf<Rect?>(null) }
-    var speedBounds by remember { mutableStateOf<Rect?>(null) }
-    var inputBounds by remember { mutableStateOf<Rect?>(null) }
-    var learningShortcutBounds by remember { mutableStateOf<Rect?>(null) }
-    var modeToggleBounds by remember { mutableStateOf<Rect?>(null) }
 
-    // Text input
-    var inputText by rememberSaveable { mutableStateOf("") }
+    // ==========================================
+    // TUTORIAL ELEMENT POSITIONS
+    // ==========================================
 
-    // Signing speed
-    var signingSpeed by rememberSaveable { mutableStateOf(1.0f) }
+    var avatarBounds by remember {
+        mutableStateOf<Rect?>(null)
+    }
 
-    // Dialog visibility
-    var showMicDialog by remember { mutableStateOf(false) }
+    var speedBounds by remember {
+        mutableStateOf<Rect?>(null)
+    }
 
-    // Help button: temporarily displays the tutorial again
-    var showHelpTutorial by remember { mutableStateOf(false) }
+    var inputBounds by remember {
+        mutableStateOf<Rect?>(null)
+    }
 
-    // Tutorial display state
+    var learningShortcutBounds by remember {
+        mutableStateOf<Rect?>(null)
+    }
+
+    var modeToggleBounds by remember {
+        mutableStateOf<Rect?>(null)
+    }
+
+    // ==========================================
+    // TEXT INPUT
+    // ==========================================
+
+    var inputText by rememberSaveable {
+        mutableStateOf("")
+    }
+
+    // ==========================================
+    // SIGNING SPEED
+    // ==========================================
+
+    var signingSpeed by rememberSaveable {
+        mutableStateOf(1.0f)
+    }
+
+    // ==========================================
+    // DIALOG VISIBILITY
+    // ==========================================
+
+    var showMicDialog by remember {
+        mutableStateOf(false)
+    }
+
+    // ==========================================
+    // HELP / TUTORIAL VISIBILITY
+    // ==========================================
+
+    var showHelpTutorial by rememberSaveable {
+        mutableStateOf(false)
+    }
+
     val tutorialVisible = showTutorial || showHelpTutorial
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    // ==========================================
+    // MAIN SCREEN
+    // ==========================================
+
+    Box(
+        modifier = Modifier.fillMaxSize()
+    ) {
 
         Column(
             modifier = Modifier
@@ -99,17 +153,24 @@ fun TextToSignScreen(
                 .background(MaterialTheme.colorScheme.background)
                 .systemBarsPadding()
                 .imePadding()
-                .padding(horizontal = 20.dp, vertical = 12.dp)
+                .padding(
+                    horizontal = 20.dp,
+                    vertical = 12.dp
+                )
         ) {
 
-            // ---- Top row: Help (left) and Learning Menu (right) ----
+            // ==========================================
+            // TOP ROW: HELP AND LEARNING MENU
+            // ==========================================
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
 
-                // HELP BUTTON (top-left, yellow)
+                // HELP BUTTON
+
                 IconButton(
                     onClick = {
                         showHelpTutorial = true
@@ -127,7 +188,8 @@ fun TextToSignScreen(
                     )
                 }
 
-                // LEARNING MENU BUTTON (top-right)
+                // LEARNING MENU BUTTON
+
                 SquareIconButton(
                     icon = Icons.Filled.School,
                     contentDescription = "Open Learning Menu",
@@ -138,9 +200,14 @@ fun TextToSignScreen(
                 )
             }
 
-            Spacer(Modifier.height(4.dp))
+            Spacer(
+                modifier = Modifier.height(4.dp)
+            )
 
-            // ---- Translation direction toggle ----
+            // ==========================================
+            // TRANSLATION MODE TOGGLE
+            // ==========================================
+
             ModeToggle(
                 selected = TranslationMode.TEXT_TO_SIGN,
                 onModeSelected = { mode ->
@@ -156,9 +223,14 @@ fun TextToSignScreen(
                     }
             )
 
-            Spacer(Modifier.height(16.dp))
+            Spacer(
+                modifier = Modifier.height(16.dp)
+            )
 
-            // ---- Virtual signing avatar area ----
+            // ==========================================
+            // VIRTUAL SIGNING AVATAR AREA
+            // ==========================================
+
             PlaceholderBox(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -174,24 +246,32 @@ fun TextToSignScreen(
                 icon = Icons.Filled.Person
             )
 
-            Spacer(Modifier.height(8.dp))
+            Spacer(
+                modifier = Modifier.height(8.dp)
+            )
 
-            // ---- Signing speed control ----
+            // ==========================================
+            // SIGNING SPEED CONTROL
+            // ==========================================
+
             Row(
                 modifier = Modifier.onGloballyPositioned {
                     speedBounds = it.boundsInRoot()
                 },
                 verticalAlignment = Alignment.CenterVertically
             ) {
+
                 Text(
-                    "0.5x",
+                    text = "0.5x",
                     style = MaterialTheme.typography.bodyMedium,
                     color = TextMuted
                 )
 
                 Slider(
                     value = signingSpeed,
-                    onValueChange = { signingSpeed = it },
+                    onValueChange = {
+                        signingSpeed = it
+                    },
                     valueRange = 0.5f..1.5f,
                     modifier = Modifier
                         .weight(1f)
@@ -204,23 +284,36 @@ fun TextToSignScreen(
                 )
 
                 Text(
-                    "1.5x",
+                    text = "1.5x",
                     style = MaterialTheme.typography.bodyMedium,
                     color = TextMuted
                 )
             }
 
+            // SIGNING SPEED LABEL
+
             Text(
                 text = "Signing speed: " +
-                        String.format(Locale.US, "%.1f", signingSpeed) + "x",
+                        String.format(
+                            Locale.US,
+                            "%.1f",
+                            signingSpeed
+                        ) + "x",
                 style = MaterialTheme.typography.bodyMedium,
                 color = TextMuted,
-                modifier = Modifier.align(Alignment.CenterHorizontally)
+                modifier = Modifier.align(
+                    Alignment.CenterHorizontally
+                )
             )
 
-            Spacer(Modifier.height(8.dp))
+            Spacer(
+                modifier = Modifier.height(8.dp)
+            )
 
-            // ---- Text input panel ----
+            // ==========================================
+            // TEXT INPUT PANEL
+            // ==========================================
+
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -228,18 +321,29 @@ fun TextToSignScreen(
                     .onGloballyPositioned {
                         inputBounds = it.boundsInRoot()
                     }
-                    .clip(RoundedCornerShape(16.dp))
+                    .clip(
+                        RoundedCornerShape(16.dp)
+                    )
                     .background(PanelGray)
                     .padding(12.dp)
             ) {
 
+                // TEXT FIELD
+
                 TextField(
                     value = inputText,
-                    onValueChange = { inputText = it },
-                    placeholder = { Text(INPUT_HINT) },
+                    onValueChange = {
+                        inputText = it
+                    },
+                    placeholder = {
+                        Text(INPUT_HINT)
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(min = 72.dp, max = 140.dp),
+                        .heightIn(
+                            min = 72.dp,
+                            max = 140.dp
+                        ),
                     colors = TextFieldDefaults.colors(
                         focusedContainerColor = Color.Transparent,
                         unfocusedContainerColor = Color.Transparent,
@@ -249,12 +353,17 @@ fun TextToSignScreen(
                         unfocusedTextColor = TextDark
                     ),
                     trailingIcon = {
+
+                        // CLEAR TEXT BUTTON
+
                         if (inputText.isNotEmpty()) {
                             IconButton(
-                                onClick = { inputText = "" }
+                                onClick = {
+                                    inputText = ""
+                                }
                             ) {
                                 Icon(
-                                    Icons.Filled.Close,
+                                    imageVector = Icons.Filled.Close,
                                     contentDescription = "Clear text",
                                     tint = PrimarySlate
                                 )
@@ -263,33 +372,43 @@ fun TextToSignScreen(
                     }
                 )
 
+                // MICROPHONE BUTTON
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End
                 ) {
-                    // Placeholder microphone button
+
                     RoundActionButton(
                         icon = Icons.Filled.Mic,
                         contentDescription = "Speak (microphone)",
-                        onClick = { showMicDialog = true },
+                        onClick = {
+                            showMicDialog = true
+                        },
                         size = 48.dp
                     )
                 }
             }
         }
 
-        // ---- TEXT -> SIGN TUTORIAL ----
+        // ==========================================
+        // TEXT-TO-SIGN TUTORIAL OVERLAY
+        // ==========================================
+
         if (tutorialVisible) {
+
             TextToSignTutorial(
                 avatarBounds = avatarBounds,
                 speedBounds = speedBounds,
                 inputBounds = inputBounds,
                 learningShortcutBounds = learningShortcutBounds,
                 modeToggleBounds = modeToggleBounds,
+
                 onFinish = {
                     showHelpTutorial = false
                     onTutorialFinished()
                 },
+
                 onDismiss = {
                     showHelpTutorial = false
                     onTutorialDismissed()
@@ -298,8 +417,12 @@ fun TextToSignScreen(
         }
     }
 
-    // ---- Microphone placeholder dialog ----
+    // ==========================================
+    // MICROPHONE PLACEHOLDER DIALOG
+    // ==========================================
+
     if (showMicDialog) {
+
         PlaceholderDialog(
             title = "Speech input (placeholder)",
             message = "Speech recognition will be added in a later stage of development. For now, please type your text in the box.",

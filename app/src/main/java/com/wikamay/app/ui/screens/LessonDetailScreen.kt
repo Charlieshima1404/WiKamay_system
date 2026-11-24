@@ -1,4 +1,6 @@
-package com.wikamay.app.ui.screens //ito yung inside ng FSL WORDS YUNG AY CAMERA//
+package com.wikamay.app.ui.screens
+
+import android.util.Log
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -20,9 +22,12 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -30,31 +35,29 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.translate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+
 import com.wikamay.app.data.SampleData
+import com.wikamay.app.ml.HandLandmark
+import com.wikamay.app.ml.HandLandmarkPreprocessor
+import com.wikamay.app.ml.Sequence
 import com.wikamay.app.ui.components.ArCameraPanel
 import com.wikamay.app.ui.components.ArReferencePreview
+import com.wikamay.app.ui.components.LearningMedia
 import com.wikamay.app.ui.components.LearningTopBar
 import com.wikamay.app.ui.components.PlaceholderDialog
 import com.wikamay.app.ui.components.PrimaryPillButton
 import com.wikamay.app.ui.components.SecondaryPillButton
 import com.wikamay.app.ui.theme.PrimarySlate
 import com.wikamay.app.ui.theme.TextMuted
-import android.util.Log
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.ui.platform.LocalContext
-import com.wikamay.app.ml.HandLandmark
-import com.wikamay.app.ml.HandLandmarkPreprocessor
-import com.wikamay.app.ml.Sequence
-import com.wikamay.app.ui.components.LearningMedia
 
 // ==========================================
 // SCREEN TRANSITION ANIMATION
@@ -82,6 +85,10 @@ private const val AR_BOTTOM_FADE = 0.6f
  *
  * AR MODE:
  * Back button and phone Back gesture close AR mode first.
+ *
+ * SIGN RECOGNITION:
+ * Uses MediaPipe hand landmarks and Sequence recognition
+ * to determine whether the user performs the expected sign.
  */
 
 @Composable
@@ -95,15 +102,26 @@ fun LessonDetailScreen(
     // LESSON STATE
     // ==========================================
 
-    // FUNCTION: Lessons of the same category as the opened lesson (Greetings, Survival, Food, ...).
-    // Previous / Next lesson move only inside this category.
+    // Lessons belonging to the same category
+    // as the initially opened lesson.
+
     val categoryLessons = remember(initialLessonId) {
-        val opened = SampleData.lessons.firstOrNull { it.id == initialLessonId }
-        if (opened == null) SampleData.lessons
-        else SampleData.lessons.filter { it.category == opened.category }
+        val opened = SampleData.lessons.firstOrNull {
+            it.id == initialLessonId
+        }
+
+        if (opened == null) {
+            SampleData.lessons
+        } else {
+            SampleData.lessons.filter {
+                it.category == opened.category
+            }
+        }
     }
 
-    var lessonPosition by rememberSaveable {
+    // Initial lesson position
+
+    var lessonPosition by rememberSaveable(initialLessonId) {
         mutableStateOf(
             categoryLessons.indexOfFirst {
                 it.id == initialLessonId
@@ -112,6 +130,7 @@ fun LessonDetailScreen(
     }
 
     // Video placeholder dialog
+
     var showVideoDialog by remember {
         mutableStateOf(false)
     }
@@ -127,6 +146,7 @@ fun LessonDetailScreen(
     // ==========================================
     // CAMERA SWITCH STATE
     // ==========================================
+
     // false = Back camera
     // true = Front camera
 
@@ -134,7 +154,6 @@ fun LessonDetailScreen(
         mutableStateOf(false)
     }
 
-    // Switch between front and back cameras
     val switchCamera: () -> Unit = {
         isFrontCamera = !isFrontCamera
     }
@@ -173,6 +192,7 @@ fun LessonDetailScreen(
     }
 
     // Phone Back gesture closes AR first
+
     BackHandler(enabled = isArMode) {
         closeAr()
     }
@@ -198,29 +218,33 @@ fun LessonDetailScreen(
     val arTitleProgress =
         ((arProgress - 0.55f) / 0.45f).coerceIn(0f, 1f)
 
+    // Current lesson
+
     val lesson = categoryLessons[lessonPosition]
 
     // ==========================================
     // SIGN RECOGNITION STATE
     // ==========================================
 
-        val context = LocalContext.current
+    val context = LocalContext.current
 
-    // The expected sign changes when the lesson changes.
-        val expectedLabel = rememberUpdatedState(lesson.signName)
+    // Expected sign updates whenever the lesson changes
+
+    val expectedLabel = rememberUpdatedState(lesson.signName)
 
     // Recognition feedback
-        var isCorrect by remember {
-            mutableStateOf(false)
-        }
 
-        var matchingPredictionCount by remember {
-            mutableStateOf(0)
-        }
+    var isCorrect by remember {
+        mutableStateOf(false)
+    }
 
-        var lastMatchingLabel by remember {
-            mutableStateOf("")
-        }
+    var matchingPredictionCount by remember {
+        mutableStateOf(0)
+    }
+
+    var lastMatchingLabel by remember {
+        mutableStateOf("")
+    }
 
     // ==========================================
     // RECOGNITION MANAGER
@@ -229,9 +253,11 @@ fun LessonDetailScreen(
     val recognitionManager = remember(context) {
         Sequence(
             context = context,
+
             onUpdate = { update ->
 
-                // Dynamic prediction is used for phrase practice.
+                // Dynamic prediction for sign practice
+
                 val prediction = update.dynamicPrediction
 
                 if (prediction != null) {
@@ -250,24 +276,35 @@ fun LessonDetailScreen(
 
                     if (predictedLabel == targetLabel) {
 
+                        // Count consecutive matching predictions
+
                         if (lastMatchingLabel == predictedLabel) {
+
                             matchingPredictionCount++
+
                         } else {
+
                             lastMatchingLabel = predictedLabel
                             matchingPredictionCount = 1
                         }
+
+                        // Require 3 consecutive matching predictions
 
                         if (matchingPredictionCount >= 3) {
                             isCorrect = true
                         }
 
                     } else {
+
+                        // Reset when the prediction does not match
+
                         matchingPredictionCount = 0
                         lastMatchingLabel = ""
                         isCorrect = false
                     }
                 }
             },
+
             onError = { message ->
                 Log.e("LessonRecognition", message)
             }
@@ -281,10 +318,15 @@ fun LessonDetailScreen(
     val handLandmarker = remember(context, recognitionManager) {
         HandLandmark(
             context = context,
+
             onResult = { result ->
+
+                // Extract hand landmark features
 
                 val extracted =
                     HandLandmarkPreprocessor.extract(result)
+
+                // Convert landmarks to Offset points for AR overlay
 
                 handLandmarkPoints.value = result.landmarks().map { hand ->
                     hand.map { landmark ->
@@ -295,8 +337,11 @@ fun LessonDetailScreen(
                     }
                 }
 
+                // Send extracted features to recognition manager
+
                 recognitionManager.processFrame(extracted)
             },
+
             onError = { message ->
                 Log.e("LessonHandLandmark", message)
             }
@@ -308,7 +353,10 @@ fun LessonDetailScreen(
     // ==========================================
 
     LaunchedEffect(isArMode) {
+
         if (isArMode) {
+
+            // Reset recognition state when AR starts
 
             matchingPredictionCount = 0
             lastMatchingLabel = ""
@@ -318,6 +366,8 @@ fun LessonDetailScreen(
 
         } else {
 
+            // Stop recognition when AR closes
+
             recognitionManager.stopSession()
 
             matchingPredictionCount = 0
@@ -326,10 +376,18 @@ fun LessonDetailScreen(
         }
     }
 
+    // ==========================================
+    // RESOURCE CLEANUP
+    // ==========================================
+
     DisposableEffect(handLandmarker, recognitionManager) {
+
         onDispose {
+
             recognitionManager.stopSession()
+
             handLandmarker.close()
+
             recognitionManager.close()
         }
     }
@@ -350,19 +408,25 @@ fun LessonDetailScreen(
         // ==========================================
         // AR CAMERA PANEL
         // ==========================================
+
         // CameraX live preview with front/back switching.
-        // Camera switch button is positioned at the center
-        // inside ArCameraPanel.
+        // Camera switch button is positioned inside ArCameraPanel.
 
         if (arProgress > 0f) {
 
             ArCameraPanel(
                 progress = arProgress,
-                startBounds = videoBoundsInRoot.translate(-containerOrigin),
+
+                startBounds = videoBoundsInRoot.translate(
+                    -containerOrigin
+                ),
+
                 isFrontCamera = isFrontCamera,
+
                 onSwitchCamera = switchCamera,
 
                 onFrame = { imageProxy ->
+
                     cameraRotationDegrees =
                         imageProxy.imageInfo.rotationDegrees
 
@@ -372,6 +436,7 @@ fun LessonDetailScreen(
                 isCorrect = isCorrect,
 
                 handLandmarkPoints = handLandmarkPoints.value,
+
                 cameraRotationDegrees = cameraRotationDegrees
             )
         }
@@ -390,7 +455,10 @@ fun LessonDetailScreen(
                 )
         ) {
 
-            // Navigation
+            // ==========================================
+            // NAVIGATION
+            // ==========================================
+
             LearningTopBar(
                 onBack = if (isArMode) closeAr else onBack,
                 onReturnToTranslation = onReturnToTranslation
@@ -398,7 +466,10 @@ fun LessonDetailScreen(
 
             Spacer(Modifier.height(12.dp))
 
-            // Lesson title
+            // ==========================================
+            // LESSON TITLE
+            // ==========================================
+
             Text(
                 "Lesson ${lessonPosition + 1}",
                 style = MaterialTheme.typography.headlineMedium,
@@ -436,6 +507,9 @@ fun LessonDetailScreen(
                         alpha = 1f - arProgress
                     }
             ) {
+
+                // Tutorial media
+
                 LearningMedia(
                     category = lesson.category,
                     item = lesson.signName,
@@ -444,6 +518,7 @@ fun LessonDetailScreen(
                 )
 
                 // TRY BUTTON
+
                 PrimaryPillButton(
                     text = "TRY",
                     onClick = openAr,
@@ -485,30 +560,38 @@ fun LessonDetailScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .alpha(arBottomAlpha),
+
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
 
                 // Previous lesson
+
                 SecondaryPillButton(
                     text = "Previous lesson",
+
                     onClick = {
                         if (lessonPosition > 0) {
                             lessonPosition--
                         }
                     },
+
                     enabled = lessonPosition > 0 && !isArMode
                 )
 
                 // Next lesson
+
                 PrimaryPillButton(
                     text = "Next lesson",
+
                     onClick = {
                         if (lessonPosition < categoryLessons.lastIndex) {
                             lessonPosition++
                         }
                     },
-                    enabled = lessonPosition < categoryLessons.lastIndex &&
-                            !isArMode
+
+                    enabled =
+                        lessonPosition < categoryLessons.lastIndex &&
+                                !isArMode
                 )
             }
 
@@ -534,7 +617,9 @@ fun LessonDetailScreen(
 
         PlaceholderDialog(
             title = "Video (placeholder)",
+
             message = "Tutorial videos will be added in a later stage of development.",
+
             onDismiss = {
                 showVideoDialog = false
             }
